@@ -1,6 +1,6 @@
 # ADR 0002: Modern build toolchain and Android API 33 compatibility baseline
 
-- **Status:** Proposed; awaiting CI validation
+- **Status:** Accepted; CI validation passed
 - **Date:** 2026-11-13
 - **Scope:** build toolchain, production JVM target, testing runtime, JVM/Android consumer compatibility
 - **Decision owner:** ISQU Tokenizer Engine maintainers

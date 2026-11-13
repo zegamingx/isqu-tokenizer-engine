@@ -207,7 +207,7 @@ Golden vectors should be versioned as test data and reused by JVM and future non
 1. **Decision bundle — COMPLETE:** ADR 0003 resolves the initial ID layout, special-token policy, NONE normalization/pre-tokenization profile, byte/text behavior, ranked BPE model, snapshot schema, fingerprint, and lineage.
 2. **Core domain model:** implement immutable snapshot and fingerprint value types, typed failures, byte/text boundaries, and an in-memory runtime contract. Keep experimental classes internal.
 3. **BPE runtime:** implement deterministic encoding/decoding against hand-authored tiny snapshots and independently checked golden vectors.
-4. **CBOR adapter:** add `tokenizer-format-cbor`, specify the exact schema and canonical digest input, then implement safe bounded parsing and writing.
+4. **CBOR adapter:** add `tokenizer-format-cbor`, implement the accepted version-1 schema/fingerprint, require explicit load limits, and add safe bounded parsing and writing.
 5. **Testkit:** publish reusable golden vectors and consumer contract tests; use test-scope dependency declarations.
 6. **BPE trainer:** implement the selected training data structure only after memory/streaming requirements are supported by a representative pilot corpus and benchmark.
 7. **Android validation — PACKAGING COMPLETE:** run API 33 emulator/physical-device conformance tests after the runtime and CBOR codec exist; do not claim device-runtime support before those tests pass.

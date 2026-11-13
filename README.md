@@ -83,6 +83,7 @@ The local snapshot artifact IDs are:
 - [Compatibility policy](docs/compatibility-policy.md)
 - [Build and ecosystem compatibility](docs/build-and-compatibility.md)
 - [Architecture Decision Records](docs/adr/README.md)
+- [Implementation Readiness Audit (G7)](docs/implementation-readiness-audit.md)
 
 ### Research
 

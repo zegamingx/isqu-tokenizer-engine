@@ -25,4 +25,4 @@ The project has not published a release yet.
 - Kept the first BPE profile internal/pre-1.0; Unigram comparison, source-cleared corpus admission, codec implementation, and cross-runtime conformance remain open gates.
 - Defined explicit bounded snapshot-loading requirements; no unbounded loader path or unmeasured mobile size preset is permitted.
 - Moved tokenizer-testkit to test-only consumer scope and removed its unnecessary production dependency on tokenizer-training.
-- No production tokenizer implementation, stable public API, or accepted snapshot format is included yet.
+- No production tokenizer implementation or stable public API is included yet; the version-1 snapshot design is accepted for internal implementation, but its codec is not implemented and the format is not stable/public.

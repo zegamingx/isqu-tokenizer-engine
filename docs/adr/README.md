@@ -9,6 +9,7 @@ An ADR begins as a proposal. It becomes accepted only after its assumptions, alt
 | ADR | Topic | Status |
 | --- | --- | --- |
 | [0001](0001-vocabulary-sizing-and-evaluation.md) | Vocabulary sizing strategy and evaluation protocol | Proposed; not frozen |
+| [0002](0002-modern-build-and-android-baseline.md) | Modern build toolchain and Android API 33 compatibility baseline | Proposed; awaiting CI validation |
 
 ## Status meanings
 

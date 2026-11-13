@@ -20,7 +20,7 @@ The repository is ready for a deliberately narrow internal prototype after the P
 | Algorithm selection | **CONDITIONAL** | Byte-level BPE is the lead prototype candidate; Unigram remains a required comparator. |
 | Corpus admission | **BLOCKED FOR REFERENCE TRAINING** | No exact source manifest has received final approval for the intended training and artifact-distribution use. |
 | JVM consumer compatibility | **PENDING MODERN FIXTURE CI** | The previous Java 11 consumer passed; a Java 21/Kotlin 2.4.21 consumer is now configured but its task was not reached in the first Android-provisioning failure. |
-| Android API 33 packaging | **PENDING CI RERUN** | Android consumer fixture is configured for minSdk 33; the first attempt stopped while installing an unavailable compileSdk 37 package before D8/R8 began. |
+| Android API 33 packaging | **PENDING CI RERUN** | Android consumer fixture uses minSdk 33 and SDK 36; the task verifies production artifacts and testImplementation isolation before D8/R8 packaging. Earlier attempts exposed SDK package and AGP unit-test classpath fixture errors, now corrected. |
 | Android API 33 runtime | **NOT DEVICE-VALIDATED** | No API 33 emulator or physical-device execution has been performed yet. |
 | Behavioral test strategy | **DEFINED, NOT IMPLEMENTED** | Contract vectors and failure cases are listed, but no production code or tokenizer tests exist. |
 

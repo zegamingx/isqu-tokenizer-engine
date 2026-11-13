@@ -19,7 +19,7 @@ The repository is ready for a deliberately narrow internal prototype after the P
 | Serialization and fingerprint | **BLOCKED FOR FORMAT FREEZE** | CBOR is a proposal; the exact canonical schema and digest input encoding are incomplete. |
 | Algorithm selection | **CONDITIONAL** | Byte-level BPE is the lead prototype candidate; Unigram remains a required comparator. |
 | Corpus admission | **BLOCKED FOR REFERENCE TRAINING** | No exact source manifest has received final approval for the intended training and artifact-distribution use. |
-| JVM consumer compatibility | **PASS FOR CURRENT SMOKE TEST** | Java 11/Kotlin 2.4 consumer compilation and published metadata were checked. |
+| JVM consumer compatibility | **PENDING MODERN FIXTURE CI** | The previous Java 11 consumer passed; a Java 21/Kotlin 2.4.21 consumer is now configured but its task was not reached in the first Android-provisioning failure. |
 | Android API 33 packaging | **PASS WITH LIMITATION** | Android consumer fixture resolves the Maven artifacts and assembles debug/release packages through D8/R8 with minSdk 33. |\n| Android API 33 runtime | **NOT DEVICE-VALIDATED** | No API 33 emulator or physical-device execution has been performed yet. |
 | Behavioral test strategy | **DEFINED, NOT IMPLEMENTED** | Contract vectors and failure cases are listed, but no production code or tokenizer tests exist. |
 
@@ -181,7 +181,7 @@ Before advertising Android support, add a minimal Android consumer fixture that:
 - Verifies no Android framework dependency leaked into `tokenizer-core`.
 - Documents any desugaring requirement and tests release/minified packaging where relevant.
 
-Keep the production core free of Android framework types. Do not infer Android compatibility solely from Java 8 bytecode or from a desktop JVM consumer. The minimum Android API level is a product decision and must not be guessed in this audit.
+Keep the production core free of Android framework types. Do not infer Android compatibility solely from Java 11 bytecode or from a desktop JVM consumer. The minimum Android API level is explicitly set to 33 by the consuming Argus application.
 
 ## 7. Required test strategy
 

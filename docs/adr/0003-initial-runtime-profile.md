@@ -134,6 +134,12 @@ The provenance map may contain only the following version-1 fields: lineageRootF
 
 Version 1 is a closed schema: unknown top-level or runtime keys are rejected. Unknown provenance keys are also rejected; a future schema change must explicitly define new keys and compatibility behavior. CBOR tags, floating-point values, indefinite-length items, duplicate map keys, and non-minimal integer/length encodings are not used by this profile.
 
+### 6.1 Bounded loading contract
+
+A pre-1.0 loader must require an explicit `TokenizerLoadLimits` value. An overload with unlimited or implicit unbounded limits is prohibited. At minimum, the caller must set bounds for total artifact bytes, maximum learned-piece count, individual learned-piece bytes, cumulative learned-piece bytes, special-token render bytes, UTF-8 text-string bytes, and total provenance bytes. Version 1 has a hard maximum CBOR container nesting depth of four levels; its closed map schemas have exact entry counts, and the special-token array is limited to 32 entries. The parser validates all declared lengths and counts against these constraints before allocating corresponding storage. The number of learned pieces must also satisfy `288 + mergeablePieceCount <= Int.MAX_VALUE`.
+
+The limit object is a loader safety policy, not tokenizer runtime semantics, and is excluded from the snapshot fingerprint. No universal Android/mobile size preset is selected in this ADR: named presets require measured peak-memory and load-latency evidence on representative API 33 devices. The loader must fail with typed resource-limit errors rather than attempt partial or best-effort loading.
+
 ### 7. Deterministic CBOR and runtime fingerprint
 
 Use RFC 8949 core deterministic encoding requirements (Section 4.2.1), not the older length-first map-key ordering. All map keys in version 1 are UTF-8 text strings; map keys are ordered by the bytewise lexicographic order of their deterministic CBOR encodings. Preferred/shortest serialization and definite lengths are required.

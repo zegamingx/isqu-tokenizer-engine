@@ -141,7 +141,7 @@ Implementations must use typed failures for at least:
 - Malformed UTF-16 input.
 - Invalid UTF-8 during strict text decoding.
 - Token ID outside the snapshot ID space.
-- Inactive or reserved token ID.
+- Unassigned reserved token ID.
 - Unsupported format or algorithm version.
 - Corrupt snapshot, checksum mismatch, or invalid fingerprint.
 - Invalid merge graph or vocabulary references.

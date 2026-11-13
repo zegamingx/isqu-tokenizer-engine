@@ -34,7 +34,7 @@ This target is selected because Android API 33 provides Java 11 core libraries, 
 ### Consumer fixtures
 
 - Modern JVM consumer: JDK 25 build runtime, Kotlin Gradle Plugin 2.4.21, Java/Kotlin target 21.
-- Android consumer: Android Gradle Plugin 9.4.0, compileSdk 37, minSdk 33, targetSdk 37, Java 11, Maven-local ISQU artifacts.
+- Android consumer: Android Gradle Plugin 9.4.0, compileSdk 36, minSdk 33, targetSdk 36, Java 11, Maven-local ISQU artifacts.
 - Testkit is a test-scope dependency only. It must not be placed on production compile/runtime classpaths or expose tokenizer-training transitively.
 - Android CI builds debug and minified release packages to exercise D8 and R8.
 
@@ -46,7 +46,7 @@ Kotlin documents KGP 2.4.20–2.4.21 as fully tested through Gradle 9.7.0 and AG
 
 JUnit 6 requires Java 17 or newer at runtime. Test compilation and runtime are isolated from the Java 11 production variant; test dependencies must never become published production dependencies.
 
-The Android D8/R8 packaging fixture is not an emulator/device execution test. Actual tokenizer runtime support on Android API 33 remains gated on device-level conformance testing once production tokenizer code exists.
+The first CI attempt passed the production build, JUnit 6 tests, and Maven-local publication. Android SDK provisioning failed because `platforms;android-37` was not present in the runner's SDK package catalog; the fixture has been changed to the available Android 16/API 36 compile platform while retaining minSdk 33. The Android D8/R8 packaging fixture is not an emulator/device execution test. Actual tokenizer runtime support on Android API 33 remains gated on device-level conformance testing once production tokenizer code exists.
 
 ## Consequences
 

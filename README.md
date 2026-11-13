@@ -35,14 +35,15 @@ Algorithms and public interfaces are not frozen. BPE, Unigram, byte fallback, no
 
 ## Build environment
 
-- JDK 17 or newer to run Gradle 9.9.1.
-- Gradle Wrapper 9.9.1, with distribution SHA-256 pinned.
-- Kotlin Gradle Plugin 2.4.21.
-- CI runs on JDK 25.
-- Published JVM bytecode and Java API baseline: Java 8.
-- Gradle Module Metadata target: `org.gradle.jvm.version = 8`.
+- JDK 25 LTS for the Gradle runtime, Java compilation, and CI tests.
+- Gradle Wrapper 9.9.1, with the distribution SHA-256 pinned.
+- Kotlin Gradle Plugin 2.4.21 (latest stable release at this review).
+- Production bytecode and JDK API baseline: Java 11, aligned with Android API 33 core-library availability.
+- Test compilation target and test runtime: JDK 25.
+- JUnit Jupiter and JUnit Platform 6.1.3.
+- Published Gradle Module Metadata target: `org.gradle.jvm.version = 11`.
 
-The Kotlin plugin's fully-tested Gradle range currently ends at 9.7.0. Gradle 9.9.1 is used for its security fixes and is validated by repository CI; this pair must not be described as vendor-fully-supported. See [Build and Ecosystem Compatibility](docs/build-and-compatibility.md).
+Java 11 is the deployment compatibility floor for Android 13/API 33; it is not the development JDK. Modern JVM consumers are validated separately at Java 21. JDK 25 is selected because it is the current LTS line; Java 27 is a newer non-LTS feature release. The Kotlin 2.4.21 + Gradle 9.9.1 pair is project-tested in CI but remains outside Kotlin's currently documented fully-tested Gradle range. See [Build and Ecosystem Compatibility](docs/build-and-compatibility.md).
 
 Build and test:
 
@@ -56,10 +57,16 @@ Publish snapshot artifacts to Maven Local:
 ./gradlew publishToMavenLocal
 ```
 
-Run the separate consumer compatibility fixture after publishing:
+Run the modern Kotlin/JVM consumer fixture after publishing:
 
 ```bash
 ./gradlew -p compatibility/consumer clean verifyPublishedArtifacts build
+```
+
+Run the Android 13/API 33 packaging fixture (D8/R8):
+
+```bash
+./gradlew -p compatibility/android-consumer clean verifyAndroidArtifacts assembleDebug assembleRelease
 ```
 
 ## Dependency coordinates

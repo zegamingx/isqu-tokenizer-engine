@@ -113,7 +113,7 @@ For Unigram, the snapshot carries the scores and inference contract. Determinist
 ## 7. Decoding behavior
 
 - Token IDs are resolved only against the exact snapshot supplied to the decoder.
-- An out-of-range ID, inactive reserved ID, or unknown special ID produces a typed error unless an explicit recovery policy is requested.
+- An out-of-range ID, unassigned reserved ID, or unknown special ID produces a typed error unless an explicit recovery policy is requested.
 - Byte fragments are concatenated before text decoding.
 - Decoder cleanup, whitespace rewriting, punctuation rewriting, and special-token removal are never implicit.
 - Skipping special tokens is an explicit decode option and its behavior is tested.

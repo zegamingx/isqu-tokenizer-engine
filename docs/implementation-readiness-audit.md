@@ -169,7 +169,7 @@ Implement tests in layers. A successful Gradle build is not a substitute for the
 - Emoji, combining marks, variation selectors, zero-width joiners, regional indicators, RTL, CJK, Thai, Indic, and mixed-script input.
 - Byte-preserving round trips for arbitrary byte arrays.
 - Special-token-like literal text versus explicit typed special-token insertion.
-- Invalid, inactive, reserved, and out-of-range IDs.
+- Unknown special-token IDs, unassigned reserved IDs, and out-of-range IDs.
 - No implicit truncation, padding, normalization, cleanup, or control-token promotion.
 - Determinism across repeated calls and shared concurrent use.
 

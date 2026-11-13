@@ -23,9 +23,11 @@ This document describes the tested project baseline. It is not a promise that ev
 | JVM bytecode target | Java 8 | Broad JVM compatibility |
 | Java API release | Java 8 | Prevents accidental calls to newer JDK APIs |
 | Gradle variant metadata | `org.gradle.jvm.version = 8` | Must match the published Java target |
-| Test framework | JUnit Jupiter 6.1.3 / Kotlin test JUnit 5 adapter | JUnit Platform test execution |
+| Test framework | JUnit Jupiter 5.14.4 | Current Java 8-compatible JUnit 5 maintenance release |
 
 The project does not pin a Java 17 toolchain. Compilation runs on the JDK that starts Gradle, while Kotlin's `-Xjdk-release=8` and Java's `options.release = 8` restrict the published code to the Java 8 API surface and bytecode. Java source/target compatibility is also set to 8 so Gradle publishes the correct JVM variant metadata.
+
+Tests use JUnit 5.14.4 because JUnit 6.x requires Java 17 or newer, while the project deliberately validates test dependency resolution and production artifact metadata at a Java 8 target. JUnit 5.14.4 continues to support Java 8 and remains in maintenance support.
 
 ### Kotlin/Gradle support caveat
 
@@ -115,4 +117,5 @@ After a stable API and format release, the project should publish a maintained c
 - [Kotlin Gradle Plugin compatibility and JVM target configuration](https://kotlinlang.org/docs/gradle-configure-project.html)
 - [Gradle 9.9.1 release notes and security fixes](https://docs.gradle.org/9.9.1/release-notes.html)
 - [Gradle Java runtime compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html)
+- [JUnit 5.14.4 user guide and Java runtime requirements](https://docs.junit.org/5.14.4/user-guide/)
 - [Gradle Wrapper validation](https://github.com/gradle/actions/tree/main/wrapper-validation)

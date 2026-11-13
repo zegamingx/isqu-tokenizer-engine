@@ -108,7 +108,7 @@ The fixture at `compatibility/android-consumer` uses:
 - The published Maven-local core and training artifacts.
 - Testkit in the Android unit-test dependency scope only.
 
-CI resolves the ISQU artifacts, checks the Android compile/test dependency scopes and Java 11 variant metadata, then builds both debug and minified release APKs. The first run verified the main build, JUnit 6 tests, and Maven-local publication; Android SDK setup then failed because the runner did not provide platforms;android-37. The fixture now uses compileSdk/targetSdk 36 while retaining minSdk 33. This executes the D8 and R8 packaging paths.
+CI resolves core/training on the Android production compile classpath, checks that tokenizer-testkit is declared under testImplementation and excluded from production, then builds both debug and minified release APKs. The JVM consumer fixture separately resolves tokenizer-testkit on its testCompileClasspath. The Android fixture uses compileSdk/targetSdk 36 while retaining minSdk 33. This executes the D8 and R8 packaging paths.
 
 This is an Android packaging and dependency-compatibility check. It does **not** yet claim that the tokenizer has been executed on an Android 13 emulator or physical device. A device-level API 33 test remains a release-readiness gate once production tokenizer code exists.
 

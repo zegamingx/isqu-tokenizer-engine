@@ -10,6 +10,7 @@ An ADR begins as a proposal. It becomes accepted only after its assumptions, alt
 | --- | --- | --- |
 | [0001](0001-vocabulary-sizing-and-evaluation.md) | Vocabulary sizing strategy and evaluation protocol | Proposed; not frozen |
 | [0002](0002-modern-build-and-android-baseline.md) | Modern build toolchain and Android API 33 compatibility baseline | Accepted; CI validation passed |
+| [0003](0003-initial-runtime-profile.md) | Initial byte-level BPE runtime profile and snapshot identity | Accepted for internal implementation |
 
 ## Status meanings
 

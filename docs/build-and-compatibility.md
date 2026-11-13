@@ -1,121 +1,160 @@
 # Build and Ecosystem Compatibility
 
-- **Status:** Stage 6 validation contract
+- **Status:** Modernized baseline; CI-validated
 - **Last reviewed:** 2026-11-13
-- **Scope:** build environment, published JVM variants, local Maven publication, consumer resolution
+- **Scope:** build JDK, Kotlin compiler, production JVM artifact, test runtime, JVM consumers, Android API 33 packaging
 
-## 1. Goals
+## 1. Compatibility model
 
-The build must separate the JDK used to run Gradle from the Java bytecode/API baseline published by the library.
+ISQU deliberately separates four version axes:
 
-A consumer must not need to use the same JDK, Gradle version, or Kotlin Gradle Plugin version as the library author. The published artifact's JVM metadata must accurately describe the bytecode/API baseline, and the POM/module metadata must describe the correct module dependencies.
+1. **Build JDK:** runs Gradle, Kotlin compilation, Java compilation, and tests.
+2. **Production class-file/API target:** defines the bytecode and JDK API surface shipped in the library.
+3. **Test runtime/target:** defines the JDK and dependencies used only by the project's tests.
+4. **Consumer platform:** defines the JVM or Android runtime requirements of applications that consume the published artifacts.
 
-This document describes the tested project baseline. It is not a promise that every JDK, Kotlin, Gradle, Android Gradle Plugin, or Android API-level combination is supported.
+A modern build JDK does not require production bytecode to target that same JDK. Conversely, a lower production bytecode target does not mean the project is developed with an old compiler or old language version.
 
-## 2. Build baseline
+## 2. Selected toolchain
 
-| Component | Project baseline | Reason |
+| Component | Baseline | Rationale |
 | --- | --- | --- |
-| Gradle Wrapper | 9.9.1 | Security-patched Gradle 9.9 line; wrapper distribution checksum is pinned |
-| Kotlin Gradle Plugin | 2.4.21 | Stable Kotlin release |
-| Gradle runtime JDK | JDK 17 minimum; CI uses JDK 25 | Gradle 9.9.1 runs on supported JDK 17–27; JDK 25 is the CI reference |
-| Kotlin language/API version | 2.4 | Explicit compiler language and API baseline |
-| JVM bytecode target | Java 8 | Broad JVM compatibility |
-| Java API release | Java 8 | Prevents accidental calls to newer JDK APIs |
-| Gradle variant metadata | `org.gradle.jvm.version = 8` | Must match the published Java target |
-| Test framework | JUnit Jupiter 5.14.4 | Current Java 8-compatible JUnit 5 maintenance release |
+| Build and test JDK | JDK 25 LTS | Current LTS line; deterministic CI toolchain |
+| Gradle Wrapper | 9.9.1 | Current security-patched Gradle 9.9 release; checksum pinned |
+| Kotlin Gradle Plugin | 2.4.21 | Latest stable Kotlin release at review time |
+| Kotlin language/API | 2.4 | Explicit language and stdlib API baseline |
+| Production bytecode/API | Java 11 | Matches Android API 33 core-library baseline |
+| Production class-file version | 55 | Java 11 class-file format |
+| Test bytecode target | Java 25 | Tests use modern JDK APIs independently of published artifacts |
+| Test framework | JUnit 6.1.3 | Current GA JUnit line at review time; requires Java 17+ at runtime |
+| JVM consumer fixture | Java 21 / Kotlin 2.4.21 | Validates consumption from a modern LTS JVM target |
+| Android consumer fixture | AGP 9.4.0, compileSdk 37, minSdk 33 | Validates API 33 dependency resolution and D8/R8 packaging |
 
-The project does not pin a Java 17 toolchain. Compilation runs on the JDK that starts Gradle, while Kotlin's `-Xjdk-release=8` and Java's `options.release = 8` restrict the published code to the Java 8 API surface and bytecode. Java source/target compatibility is also set to 8 so Gradle publishes the correct JVM variant metadata.
+JDK 27 is a newer feature release, but it is not an LTS release. JDK 25 is the current LTS release and is the more appropriate baseline for reproducible long-lived CI. The next planned LTS is Java 29 in September 2027.
 
-Tests use JUnit 5.14.4 because JUnit 6.x requires Java 17 or newer, while the project deliberately validates test dependency resolution and production artifact metadata at a Java 8 target. JUnit 5.14.4 continues to support Java 8 and remains in maintenance support.
+Kotlin 2.4.21 is the latest stable release at this review. Kotlin 2.5.0-RC is a pre-release and is intentionally not used for the production build. The Kotlin release schedule lists the 2.5.0 stable release as planned for December 2026; upgrade after GA and after its Gradle/AGP compatibility matrix is verified.
 
-### Kotlin/Gradle support caveat
+## 3. Why production remains Java 11
 
-The Kotlin compatibility table lists KGP 2.4.20–2.4.21 as fully tested with Gradle through 9.7.0. It also permits trying newer Gradle versions, while warning that deprecations or unavailable features may occur. Gradle 9.9.1 is selected because Gradle 9.9.0 and earlier in the 9.x line are affected by recent security advisories; the 9.9.1 release fixes those issues.
+This baseline is a platform decision, not a preference for an old Java toolchain.
 
-Therefore, KGP 2.4.21 + Gradle 9.9.1 is an intentionally validated project combination, but it is **outside the KGP vendor's fully-tested Gradle range** at this review date. The build workflow is the acceptance gate for this exact combination. The repository must not describe this pair as vendor-certified full compatibility.
+Android's current compatibility table identifies:
+- Android 13 / API 33: Java 11 core libraries.
+- Android 14 / API 34: Java 17 core libraries.
 
-Do not replace Gradle 9.9.1 with 9.7.0 merely to fit the KGP fully-tested table: Gradle 9.7.0 falls in the affected range for the daemon-registry security advisory. Do not switch the build to Kotlin 2.5.0-RC to resolve the mismatch; a release candidate is not the stable production baseline.
+ArgusA's minimum Android API is 33. ISQU's production library therefore targets Java 11 bytecode and Java 11 JDK APIs so that the core library does not require Java 17 core-library APIs unavailable natively on the minimum Android release.
 
-## 3. Consumer compatibility target
+The production configuration must keep all of these aligned:
+- Kotlin `jvmTarget = 11`.
+- Kotlin `-Xjdk-release=11`.
+- Java `sourceCompatibility = 11`.
+- Java `targetCompatibility = 11`.
+- Java `options.release = 11`.
+- Gradle Module Metadata `org.gradle.jvm.version = 11`.
 
-The consumer fixture under `compatibility/consumer` models the Kotlin/JVM side of the current ArgusA dependency environment:
+This does **not** mean:
+- Gradle runs on JDK 11.
+- Kotlin is limited to Kotlin 1.x or old language features.
+- A Java 21 or Java 25 application cannot consume ISQU.
+- The tokenizer must use old algorithms or old APIs.
 
-| Component | Consumer fixture |
-| --- | --- |
-| JDK running Gradle | 25 |
-| Gradle | 9.9.1 security-patched release |
-| Kotlin Gradle Plugin | 2.4.10 (the version observed in ArgusA) |
-| Consumer Java/Kotlin target | Java 11 |
-| Resolved ISQU module set | core, training, testkit |
-| Expected ISQU Gradle variant | JVM 8 |
+A modern Java 21/25 JVM can run Java 11 bytecode. The trade-off is that ISQU's production source must not call JDK APIs newer than Java 11 unless a separately documented and validated platform-specific path is introduced. Do not use Java 17/21/25 JDK APIs in `tokenizer-core` merely because CI runs on JDK 25.
 
-The ArgusA repository was observed using Gradle 9.8.1. The fixture uses 9.9.1 instead of reproducing that exact wrapper because Gradle 9.8.1 is in the affected range of the recent Gradle security advisories. It retains the ArgusA Kotlin plugin version and Java 11 target. This is a compatibility smoke test, not a change to ArgusA.
+For Android consumers, core-library desugaring may be used only for APIs documented as supported by the selected desugared-library version. Desugaring must not be treated as a blanket implementation of every later Java API.
 
-The fixture verifies that all three Maven-local artifacts resolve, that Gradle selects a compatible JVM 8 variant for a Java 11 consumer, and that the consumer's Java and Kotlin source sets compile. The current ISQU modules intentionally contain no public tokenizer API yet, so this stage cannot test application imports or runtime tokenizer behavior.
+## 4. JUnit 6 and test isolation
 
-## 4. Artifact coordinates
+JUnit 6.1.3 requires Java 17 or newer at test runtime. It can test production classes compiled for an older Java target.
 
-Local Maven publication uses:
+ISQU therefore uses:
+- JDK 25 to execute Gradle and tests.
+- JVM 25 for `compileTestKotlin` and `compileTestJava`.
+- JUnit Jupiter 6.1.3 and JUnit Platform Launcher 6.1.3.
+- Test compile/runtime dependency attributes targeting JVM 25.
 
-| Module | Maven coordinates |
-| --- | --- |
-| tokenizer-core | `io.github.zegamingx:isqu-tokenizer-core:0.1.0-SNAPSHOT` |
-| tokenizer-training | `io.github.zegamingx:isqu-tokenizer-training:0.1.0-SNAPSHOT` |
-| tokenizer-testkit | `io.github.zegamingx:isqu-tokenizer-testkit:0.1.0-SNAPSHOT` |
+Production compile tasks remain Java 11. Test class files are not included in the production JAR or published as the main artifact.
 
-The group ID is provisional pending namespace verification with the eventual publication service. No public Maven Central release is created by Stage 6.
+The Kotlin test adapter retains the `kotlin-test-junit5` artifact name for JUnit Platform/Jupiter integration. Its name does not imply that the project runs JUnit 5; the resolved Jupiter and Platform dependencies are explicitly pinned to 6.1.3.
 
-Each module publishes:
-- The Java component and Gradle Module Metadata.
-- A Maven POM with Apache-2.0 license and SCM/project metadata.
-- A sources JAR.
-- Transitive API dependency declarations for module-to-module dependencies.
+## 5. Consumer compatibility fixtures
 
-This stage validates `publishToMavenLocal`, not public namespace ownership, signatures, Javadoc publication, Maven Central staging, or release provenance.
+### 5.1 Modern Kotlin/JVM consumer
 
-## 5. Wrapper policy
+The fixture at `compatibility/consumer` uses:
+- JDK 25 to run Gradle.
+- Kotlin Gradle Plugin 2.4.21.
+- Java/Kotlin target 21.
+- ISQU production artifacts at Java 11.
 
-The checked-in Gradle Wrapper is the canonical project entry point.
+It verifies:
+- Core and training artifacts resolve on the production compile classpath.
+- Testkit resolves only on the test compile classpath.
+- All artifacts advertise `org.gradle.jvm.version = 11`.
+- JAR, sources JAR, POM, and Gradle Module Metadata exist.
+- Apache-2.0 and SCM metadata are present.
+- Training exposes core as an API dependency.
+- Testkit exposes core but does not expose training transitively.
+- Java and Kotlin consumer sources compile.
 
-- Pin Gradle 9.9.1.
-- Pin the distribution SHA-256 in `gradle-wrapper.properties`.
-- Use binary-only (`bin`) distribution for CI and ordinary development.
-- Enable distribution URL validation.
-- Validate the Wrapper JAR in CI.
-- Keep `gradlew`, `gradlew.bat`, `gradle-wrapper.jar`, and `gradle-wrapper.properties` in version control.
-- Do not commit local Gradle caches or build outputs.
+### 5.2 Android 13 / API 33 consumer
 
-## 6. Validation workflow
+The fixture at `compatibility/android-consumer` uses:
+- Android Gradle Plugin 9.4.0.
+- Gradle Wrapper 9.9.1.
+- JDK 25 to run Gradle.
+- compileSdk 37.
+- minSdk 33 and targetSdk 37.
+- Java source/target 11.
+- The published Maven-local core and training artifacts.
+- Testkit in the Android unit-test dependency scope only.
 
-The CI workflow must:
+CI resolves the ISQU artifacts, checks the Android compile/test dependency scopes and Java 11 variant metadata, then builds both debug and minified release APKs. This executes the D8 and R8 packaging paths.
 
-1. Start with JDK 25.
-2. Generate the pinned Gradle Wrapper from the pinned Gradle 9.9.1 distribution.
-3. Validate the generated Wrapper JAR.
-4. Run `clean build` and all available module tests.
-5. Publish all modules to Maven Local.
-6. Build the separate consumer fixture with KGP 2.4.10 and Java 11 target.
-7. Assert that the resolved ISQU Gradle variants advertise JVM 8.
-8. Commit the generated wrapper files to `main` only after all validation steps pass.
+This is an Android packaging and dependency-compatibility check. It does **not** yet claim that the tokenizer has been executed on an Android 13 emulator or physical device. A device-level API 33 test remains a release-readiness gate once production tokenizer code exists.
 
-The repository currently has no production tokenizer source and no module test cases. A successful build at this stage validates the Gradle/Kotlin configuration, dependency resolution, Maven publication structure, JVM target metadata, and consumer compilation. It does not prove tokenizer correctness or runtime behavior.
+The fixture deliberately uses a Java Android consumer and does not apply the Kotlin Android Gradle Plugin. That avoids claiming an unverified KGP 2.4.21 + AGP 9.4.0 pairing. The standalone Kotlin/JVM consumer separately verifies the current Kotlin plugin.
 
-## 7. Compatibility guarantees and non-goals
+## 6. Known Gradle/Kotlin compatibility boundary
 
-Before 1.0.0, the project does not guarantee:
-- Compatibility with every JDK or Android runtime.
-- Compatibility with every Gradle or Kotlin plugin version.
-- A stable binary API or serialization format.
-- Public Maven Central coordinates.
-- Runtime behavior on Android devices.
+The Kotlin compatibility table lists KGP 2.4.20–2.4.21 as fully tested through Gradle 9.7.0 and AGP 9.3.1. Gradle 9.9.1 is newer than that fully-tested Gradle range.
 
-After a stable API and format release, the project should publish a maintained compatibility matrix and test representative minimum and current consumer combinations.
+Gradle 9.9.1 is retained because its release addresses three security vulnerabilities and Gradle recommends upgrading to it. The exact KGP 2.4.21 + Gradle 9.9.1 pairing is tested by this repository's CI, but it must be described as **project-tested**, not vendor-fully-tested.
+
+Do not downgrade to a security-affected Gradle release merely to fit the old KGP compatibility ceiling. Re-evaluate this boundary when Kotlin 2.5.0 reaches stable release. Do not move the production build to Kotlin 2.5.0-RC.
+
+## 7. Wrapper, publication, and CI policy
+
+- Gradle Wrapper 9.9.1 is the canonical build entry point.
+- The binary distribution SHA-256 is pinned.
+- Wrapper URL validation is enabled.
+- The Wrapper JAR is validated in CI.
+- All modules publish to Maven Local during CI.
+- A separate JVM consumer and Android API 33 consumer resolve those artifacts.
+- CI permissions remain read-only except for the narrowly scoped wrapper-commit job.
+- External GitHub Actions are pinned to immutable commit SHAs.
+
+This workflow validates local publication and consumption. It does not publish to Maven Central, verify ownership of the provisional Maven namespace, or create a signed public release.
+
+## 8. Upgrade policy
+
+Review the baseline at least when:
+- A new stable Kotlin release becomes available.
+- A new JDK LTS becomes available.
+- Gradle or AGP ships a security patch or a supported compatibility range changes.
+- JUnit ships a stable maintenance or major release.
+- ArgusA raises its minimum Android API level.
+- ISQU begins using Java APIs newer than Java 11.
+
+A version upgrade is accepted only after the JVM consumer, Android D8/R8 fixture, module tests, and publication metadata checks pass. A release candidate may be tested in a separate experiment, but it must not replace the stable production toolchain by default.
 
 ## References
 
-- [Kotlin Gradle Plugin compatibility and JVM target configuration](https://kotlinlang.org/docs/gradle-configure-project.html)
+- [Oracle Java SE Support Roadmap](https://www.oracle.com/java/technologies/java-se-support-roadmap.html)
+- [Kotlin release process and stable versions](https://kotlinlang.org/docs/releases.html)
+- [Kotlin Gradle Plugin compatibility table](https://kotlinlang.org/docs/gradle-configure-project.html)
+- [Kotlin JVM compiler options](https://kotlinlang.org/docs/compiler-reference.html)
 - [Gradle 9.9.1 release notes and security fixes](https://docs.gradle.org/9.9.1/release-notes.html)
-- [Gradle Java runtime compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html)
-- [JUnit 5.14.4 user guide and Java runtime requirements](https://docs.junit.org/5.14.4/user-guide/)
-- [Gradle Wrapper validation](https://github.com/gradle/actions/tree/main/wrapper-validation)
+- [Android Java versions and API availability](https://developer.android.com/build/jdks)
+- [Android Gradle Plugin 9.4.0 release notes](https://developer.android.com/build/releases/agp-9-4-0-release-notes)
+- [Java 11+ API desugaring](https://developer.android.com/studio/write/java8-support)
+- [JUnit 6.1.3 user guide and runtime requirements](https://docs.junit.org/6.1.3/user-guide/)

@@ -1,6 +1,6 @@
 # ADR 0001: Vocabulary sizing strategy and evaluation protocol
 
-- **Status:** Proposed; not accepted as a frozen architecture decision
+- **Status:** Proposed; evaluation protocol remains open. ID-layout decisions are superseded by accepted ADR 0003.
 - **Date:** 2026-11-13
 - **Scope:** tokenizer-core, tokenizer-training, reference vocabulary artifacts
 - **Decision owner:** ISQU Tokenizer Engine maintainers
@@ -44,12 +44,11 @@ The current 1,024-ID ArgusA vocabulary is a useful consumer baseline, not an ISQ
 
 ## ID-space proposal for byte-level BPE
 
-The current layout proposal is:
+The accepted initial layout is specified normatively in [ADR 0003](0003-initial-runtime-profile.md). In summary:
 
-- A reserved special-token ID block `[0, S)`; `S = 32` is an unresolved proposal, not a frozen value.
-- The 256 byte tokens occupy `[S, S + 256)`.
-- BPE merge outputs are assigned in merge order beginning at `S + 256`.
-- The output ID for merge number `i` is implied by its position in the ordered merge list.
+- A reserved special-token ID block `[0, 32)`.
+- The 256 byte tokens occupy `[32, 288)` and map ID = 32 + unsigned byte value.
+- Learned byte pieces occupy `[288, idSpaceSize)` in increasing rank order. Piece index `i` maps to ID `288 + i`.
 
 The format must distinguish:
 
@@ -60,11 +59,11 @@ The format must distinguish:
 
 Unassigned reserved special slots are not active vocabulary entries, but they still occupy positions in the ID space. Adding a special token into a reserved slot creates a new snapshot and a new runtime fingerprint. It must never silently change an existing snapshot.
 
-The selected value of `S`, the treatment of inactive reserved slots, and the public meaning of `vocabSize` remain open. Until they are resolved, tables above describe an ID-space target under the illustrative `S = 32` layout, not a commitment to 32 active special tokens.
+The capacity is 32 reserved slots, not 32 active special tokens. Unassigned slots count toward `idSpaceSize` but not `activeTokenCount`. Use `targetIdSpaceSize` for vocabulary sweeps; avoid an unqualified `vocabSize`. See ADR 0003 for the complete definitions.
 
 ## Vocabulary-size sweep
 
-The initial sweep should cover:
+The initial sweep uses target ID-space sizes (including the reserved special slots and fixed 256-byte base). It should cover:
 
 `1,024 / 2,048 / 4,096 / 8,192 / 16,384 / 32,768 / 65,536`
 
@@ -163,9 +162,8 @@ Identical inputs and a fixed trainer version must produce identical output finge
 
 ## Open questions
 
-- Final special-token reserved capacity and active-slot semantics.
-- Whether the primary runtime supports only byte-level BPE in the first stable release or includes Unigram before 1.0.0.
-- Normalization default and supported Unicode versioning policy.
+- Whether Unigram should be included in the first stable release, after the initial BPE profile and comparison evidence.
+- Whether a later profile should add a normalizer or pre-tokenizer, based on controlled multilingual measurements.
 - Whether the first reference model prioritizes general multilingual coverage or a declared device/language tier.
 - Exact pilot design, compute budget, seed count, and selection margin.
 - Whether the first BPE training algorithm is fully streaming, external-memory, or memory-bounded in-memory.

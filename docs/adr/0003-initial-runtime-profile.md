@@ -74,7 +74,7 @@ Any future normalizer or pre-tokenizer is a separately versioned profile. Its co
 A special token is an explicitly assigned ID in the reserved range. Its snapshot entry contains:
 
 - id: the assigned integer ID.
-- name: a non-empty, case-sensitive ASCII identifier unique within the snapshot.
+- name: a case-sensitive ASCII identifier matching `[A-Za-z][A-Za-z0-9._-]{0,63}`, unique within the snapshot.
 - renderBytes: non-empty bytes that are valid UTF-8 and are emitted when the special token is decoded in render mode.
 
 No built-in token names or semantics are imposed by the engine. Consumers may define entries such as BOS, EOS, padding, or conversation-control tokens, but their meaning belongs to the consuming model/application.

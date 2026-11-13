@@ -1,6 +1,6 @@
 # Build and Ecosystem Compatibility
 
-- **Status:** Modernized baseline; JVM tests passed, Android fixture awaiting rerun
+- **Status:** Modernized baseline; CI validated
 - **Last reviewed:** 2026-11-13
 - **Scope:** build JDK, Kotlin compiler, production JVM artifact, test runtime, JVM consumers, Android API 33 packaging
 
@@ -108,7 +108,7 @@ The fixture at `compatibility/android-consumer` uses:
 - The published Maven-local core and training artifacts.
 - Testkit in the Android unit-test dependency scope only.
 
-CI resolves core/training on the Android production compile classpath, checks that tokenizer-testkit is declared under testImplementation and excluded from production, then builds both debug and minified release APKs. The JVM consumer fixture separately resolves tokenizer-testkit on its testCompileClasspath. The Android fixture uses compileSdk/targetSdk 36 while retaining minSdk 33. This executes the D8 and R8 packaging paths.
+CI run #8 successfully resolved core/training on the Android production compile classpath, checked that tokenizer-testkit is declared under testImplementation and excluded from production, and built both debug and minified release APKs. The JVM consumer separately resolved tokenizer-testkit on its testCompileClasspath. The Android fixture uses compileSdk/targetSdk 36 while retaining minSdk 33. D8 and R8 packaging both passed.
 
 This is an Android packaging and dependency-compatibility check. It does **not** yet claim that the tokenizer has been executed on an Android 13 emulator or physical device. A device-level API 33 test remains a release-readiness gate once production tokenizer code exists.
 
@@ -130,7 +130,7 @@ Do not downgrade to a security-affected Gradle release merely to fit the old KGP
 - The Wrapper JAR is validated in CI.
 - All modules publish to Maven Local during CI.
 - A separate JVM consumer and Android API 33 consumer resolve those artifacts.
-- CI permissions remain read-only except for the narrowly scoped wrapper-commit job.
+- CI permissions remain read-only except for the narrowly scoped wrapper-commit job. Run #8 also completed the verified Wrapper job successfully.
 - External GitHub Actions are pinned to immutable commit SHAs.
 
 This workflow validates local publication and consumption. It does not publish to Maven Central, verify ownership of the provisional Maven namespace, or create a signed public release.

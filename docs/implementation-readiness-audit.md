@@ -222,4 +222,4 @@ Do not block correctness implementation on expensive model-level BPB experiments
 
 The project can proceed with an internal, non-stable BPE runtime prototype after P0-1 through P0-5 are recorded as explicit decisions. A distributable reference vocabulary additionally requires P0-6. Android dependency and D8/R8 packaging validation pass; on-device API 33 runtime support remains unclaimed until emulator or physical-device conformance tests pass.
 
-No production implementation, stable public API, accepted format version, approved general-purpose corpus, Maven Central release, or Android compatibility claim is created by this audit.
+No production tokenizer implementation or stable public API exists yet. The version-1 snapshot design is accepted for internal implementation, but its codec is not implemented and no stable public format is released. No general-purpose corpus is approved for reference training, no Maven Central release has occurred, and Android API 33 device-runtime compatibility remains unclaimed.

@@ -56,7 +56,10 @@ jobs:
       - name: Build, test, and publish to Maven Local
         run: ./gradlew --no-daemon --stacktrace clean build publishToMavenLocal
 
-      - name: Install Android SDK platform 37
+      - name: Verify Java 21 / Kotlin 2.4.21 consumer
+        run: ./gradlew --no-daemon --stacktrace -p compatibility/consumer clean verifyPublishedArtifacts build
+
+      - name: Install Android SDK platform 36
         shell: bash
         run: |
           set -euo pipefail
@@ -72,7 +75,7 @@ jobs:
           set +o pipefail
           yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null
           set -o pipefail
-          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "platforms;android-37" "build-tools;36.0.0"
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "platforms;android-36" "build-tools;36.0.0"
           echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
 

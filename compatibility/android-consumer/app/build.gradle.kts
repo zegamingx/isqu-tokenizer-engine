@@ -66,7 +66,7 @@ tasks.register("verifyAndroidArtifacts") {
             "tokenizer-testkit must not leak onto the Android production classpath"
         }
 
-        val unitTestArtifacts = resolvedIsquArtifacts("testDebugUnitTestCompileClasspath")
+        val unitTestArtifacts = resolvedIsquArtifacts("debugUnitTestCompileClasspath")
         check("isqu-tokenizer-testkit" in unitTestArtifacts) {
             "tokenizer-testkit must be available to Android unit tests"
         }

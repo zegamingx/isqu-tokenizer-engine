@@ -42,6 +42,7 @@ Algorithms and public interfaces are not frozen. BPE, Unigram, byte fallback, no
 - Test compilation target and test runtime: JDK 25.
 - JUnit Jupiter and JUnit Platform 6.1.3.
 - Published Gradle Module Metadata target: `org.gradle.jvm.version = 11`.
+- JVM consumer target: Java 21; Android packaging consumer: compileSdk/targetSdk 36, minSdk 33.
 
 Java 11 is the deployment compatibility floor for Android 13/API 33; it is not the development JDK. Modern JVM consumers are validated separately at Java 21. JDK 25 is selected because it is the current LTS line; Java 27 is a newer non-LTS feature release. The Kotlin 2.4.21 + Gradle 9.9.1 pair is project-tested in CI but remains outside Kotlin's currently documented fully-tested Gradle range. See [Build and Ecosystem Compatibility](docs/build-and-compatibility.md).
 

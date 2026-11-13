@@ -84,7 +84,7 @@ The behavior is fixed:
 - Ordinary encodeText and encodeBytes never recognize a special-token spelling. The spelling is encoded as ordinary UTF-8/raw bytes.
 - Special-token insertion is a separate typed operation that accepts an assigned special-token ID/name. It must not be implemented as an implicit substring replacement.
 - Decoding renders special tokens using their stored renderBytes by default. An explicit option may skip special tokens.
-- An unassigned reserved ID, inactive/unknown special ID, or ID outside idSpaceSize produces a typed error.
+- An unassigned reserved ID, unknown special ID, or ID outside idSpaceSize produces a typed error.
 - A special token's ID, name, and render bytes are fingerprinted. Adding a new token in a previously unassigned reserved slot creates a new snapshot fingerprint. Changing an existing entry requires a new lineage.
 
 Byte-level BPE already represents every byte, so an unknown-token entry is not required for byte coverage.

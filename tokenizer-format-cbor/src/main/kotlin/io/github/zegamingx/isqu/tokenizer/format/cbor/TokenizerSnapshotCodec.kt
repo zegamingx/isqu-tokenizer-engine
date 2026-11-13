@@ -560,7 +560,7 @@ object TokenizerSnapshotCodec {
             throw TokenizerFormatException("Invalid snapshot provenance", exception)
         }
 
-        if (sequence == 0L && !MessageDigest.isEqual(rootFingerprint, runtimeFingerprint)) {
+        if (sequence == 0uL && !MessageDigest.isEqual(rootFingerprint, runtimeFingerprint)) {
             throw TokenizerFormatException(
                 "Root provenance lineageRootFingerprint must equal the runtime fingerprint",
             )

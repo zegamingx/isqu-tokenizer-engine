@@ -98,19 +98,19 @@ internal object DeterministicCborWriter {
             }
             value <= 0xffffuL -> {
                 output.write((majorType shl 5) or 25)
-                output.write((value ushr 8).toInt())
+                output.write((value shr 8).toInt())
                 output.write(value.toInt())
             }
             value <= 0xffff_ffffuL -> {
                 output.write((majorType shl 5) or 26)
                 for (shift in 24 downTo 0 step 8) {
-                    output.write((value ushr shift).toInt())
+                    output.write((value shr shift).toInt())
                 }
             }
             else -> {
                 output.write((majorType shl 5) or 27)
                 for (shift in 56 downTo 0 step 8) {
-                    output.write((value ushr shift).toInt())
+                    output.write((value shr shift).toInt())
                 }
             }
         }
@@ -253,7 +253,16 @@ internal class DeterministicCborReader(
                 "mergeablePieces" -> limits.maxMergeablePieceCount
                 else -> 0
             }
-            entries.add(key.value to readValue(depth + 1, childArrayLimit))
+            val isProvenance = depth == 0 && key.value == "provenance"
+            if (isProvenance) {
+                provenanceBudgetStart = offset
+            }
+            val value = readValue(depth + 1, childArrayLimit)
+            if (isProvenance) {
+                ensureProvenanceBudget(offset)
+                provenanceBudgetStart = null
+            }
+            entries.add(key.value to value)
         }
 
         return CborValue.Map(entries, start, offset)
@@ -294,6 +303,15 @@ internal class DeterministicCborReader(
             }
             31 -> throw TokenizerFormatException("Indefinite-length CBOR items are not permitted")
             else -> throw TokenizerFormatException("Reserved CBOR additional-information value")
+        }
+    }
+
+    private fun ensureProvenanceBudget(endOffset: Int) {
+        val startOffset = provenanceBudgetStart ?: return
+        if (endOffset - startOffset > limits.maxProvenanceBytes) {
+            throw TokenizerResourceLimitException(
+                "Provenance exceeds maxProvenanceBytes ${limits.maxProvenanceBytes}",
+            )
         }
     }
 

@@ -145,6 +145,24 @@ class TokenizerSnapshotCodecTest {
     }
 
     @Test
+    fun loaderEnforcesProvenanceByteLimitDuringParsing() {
+        val snapshot = snapshot()
+        val provenance = TokenizerProvenance(
+            lineageRootFingerprint = TokenizerSnapshotFingerprint.compute(snapshot),
+            snapshotSequence = 0uL,
+            trainerName = "isqu-test-trainer".repeat(8),
+        )
+        val encoded = TokenizerSnapshotCodec.encode(snapshot, provenance)
+
+        assertThrows(TokenizerResourceLimitException::class.java) {
+            TokenizerSnapshotCodec.decode(
+                encoded,
+                limits.copy(maxProvenanceBytes = 32),
+            )
+        }
+    }
+
+    @Test
     fun loaderEnforcesMergeablePieceCount() {
         val encoded = TokenizerSnapshotCodec.encode(snapshot())
         val strictLimits = limits.copy(maxMergeablePieceCount = 1)

@@ -87,8 +87,16 @@ tasks.register("verifyAndroidArtifacts") {
         ) {
             "tokenizer-testkit must be declared under testImplementation"
         }
+        check(
+            testDependencies.none { dependency ->
+                dependency.group == "io.github.zegamingx" &&
+                    dependency.name == "isqu-tokenizer-format-cbor"
+            },
+        ) {
+            "tokenizer-format-cbor must be provided transitively by tokenizer-testkit, not declared directly"
+        }
 
-        (productionArtifacts + testArtifacts).forEach { (moduleName, artifact) ->
+        productionArtifacts.forEach { (moduleName, artifact) ->
             val targetJvm = artifact.variant.attributes.getAttribute(
                 TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE,
             )

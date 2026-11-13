@@ -14,7 +14,9 @@ The project has not published a release yet.
 - Added a proposed language-independent tokenizer snapshot format.
 - Added algorithm comparison research for BPE, Unigram, and WordPiece.
 - Added corpus provenance, rights-review, and data-governance policy.
-- Added pinned Gradle Wrapper configuration, JVM 8 publication targeting, and Maven-local publications.
-- Added consumer compatibility validation for a Java 11 / Kotlin 2.4 consumer.
-- Selected a Java 8-compatible JUnit 5 test line for the library baseline.
+- Added pinned Gradle Wrapper configuration, JVM 11 production targeting, and Maven-local publications.
+- Modernized CI and unit testing to JDK 25 and JUnit 6.1.3; test classes target JVM 25.
+- Added a Java 21 / Kotlin 2.4.21 consumer compatibility fixture.
+- Added an Android API 33 consumer fixture using AGP 9.4.0 with D8/R8 debug and release packaging.
+- Moved tokenizer-testkit to test-only consumer scope and removed its unnecessary production dependency on tokenizer-training.
 - No production tokenizer implementation, stable public API, or accepted snapshot format is included yet.

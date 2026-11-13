@@ -11,7 +11,7 @@ The repository is ready for a deliberately narrow internal byte-level BPE protot
 
 | Area | Result | Reason |
 | --- | --- | --- |
-| Build and publication baseline | **PASS** | Stage 6 validated Maven Local publication and a separate Java 11/Kotlin consumer. |
+| Build and publication baseline | **PASS** | The modernized CI baseline passed JDK 25/JUnit 6 tests, Maven Local publication, Java 21/Kotlin consumer compilation, Android API 33 dependency checks, and D8/R8 packaging. |
 | High-level module separation | **PASS WITH ACTION** | Core, training, and testkit responsibilities are distinct, but persistence adapter ownership is not yet represented by a module. |
 | Package structure | **PROPOSED** | No production packages or public declarations exist yet. |
 | Runtime API | **NOT FROZEN** | The tokenization contract is behavioral guidance; its method names are illustrative. |
@@ -122,15 +122,9 @@ Do not freeze exact Kotlin signatures until Java interoperability, array ownersh
 
 ### P0-1 — Token ID layout — RESOLVED BY ADR 0003
 
-The initial layout is fixed as special IDs [0, 32), byte IDs [32, 288), and ranked learned pieces from 288 onward. idSpaceSize, activeTokenCount, reservedSpecialCapacity, and targetIdSpaceSize have explicit meanings. Token IDs are non-negative signed Int32 values. See ADR 0003 for the normative rules.
+The initial layout is fixed as special IDs [0, 32), byte IDs [32, 288), and ranked learned pieces from 288 onward. `idSpaceSize`, `activeTokenCount`, `reservedSpecialCapacity`, and `targetIdSpaceSize` have explicit meanings. Token IDs are non-negative signed Int32 values. See ADR 0003 for the normative rules.
 
-- Whether reserved special-token capacity is fixed, configurable, or absent in the first format version.
-- Whether the illustrative `S = 32` is actually needed and what happens to unassigned slots.
-- Exact definitions for `idSpaceSize`, `activeTokenCount`, `reservedSpecialCapacity`, and the public meaning (if any) of `vocabSize`.
-- The numeric width and maximum supported token ID. The Kotlin/JVM public API, CBOR representation, and embedding-row count must agree.
-- Whether assigning a new special token into a reserved slot is permitted only in a new snapshot and how that affects lineage.
-
-A model embedding table must be sized from the highest usable ID plus one, not from active token count when the ID space contains holes.
+The embedding/output-projection row count must cover `idSpaceSize`, not `activeTokenCount`, because reserved special-token slots occupy positions even before they are assigned.
 
 ### P0-2 — Normalization and pre-tokenization — RESOLVED FOR THE INITIAL PROFILE
 
@@ -142,16 +136,7 @@ The first 32 IDs are reserved. Special tokens are added in unused slots and are 
 
 ### P0-4 — Snapshot schema and fingerprint — DESIGN RESOLVED; IMPLEMENTATION PENDING
 
-ADR 0003 and tokenizer-format.md define the exact version-1 top-level/runtime fields, CBOR types, ID layout, closed-schema behavior, and fingerprint byte input. The version-1 fingerprint is SHA-256 over the core-deterministic CBOR projection {format, formatVersion, runtime}. Remaining release gates are codec implementation and independent byte-for-byte/cross-runtime tests. The schema specifies:
-
-- CBOR map key types and deterministic ordering requirements.
-- Required, optional, and unknown-field behavior for each schema version.
-- Exact numeric ranges and string encodings.
-- The complete runtime-fingerprint input bytes and domain-separation rule.
-- Whether the fingerprint is represented in the file as a 32-byte CBOR byte string and as what form in public APIs.
-- The exclusion of provenance-only fields from the runtime fingerprint.
-- The separate whole-artifact digest location. A digest of the complete file must not recursively be embedded in the same bytes it hashes.
-- Resource limits checked before allocation.
+ADR 0003 and tokenizer-format.md define the exact version-1 top-level/runtime fields, CBOR types, ID layout, closed-schema behavior, and fingerprint byte input. The version-1 fingerprint is SHA-256 over the core-deterministic CBOR projection {format, formatVersion, runtime}. Remaining release gates are codec implementation and independent byte-for-byte/cross-runtime tests. Implementation verification must cover CBOR map-key ordering, closed-schema behavior, numeric/string encodings, the exact fingerprint input bytes, exclusion of provenance-only fields, a separate whole-artifact digest, and bounded parsing before allocation.
 
 The runtime fingerprint is an identity/integrity check for tokenizer semantics, not a digital signature or proof of source rights.
 
@@ -169,16 +154,9 @@ A small source-cleared pilot is preferable to a large web crawl with unresolved 
 
 The modern compatibility baseline uses JDK 25, Kotlin Gradle Plugin 2.4.21, JUnit 6.1.3, Java 11 production bytecode/API, and Java 25 test runtime. Its Java 21/Kotlin consumer and Android API 33 D8/R8 packaging fixture pass CI. This does not prove tokenizer runtime behavior on an Android 13 device.
 
-Before advertising Android support, add a minimal Android consumer fixture that:
+The AGP 9.4.0 Android consumer with minSdk 33, compileSdk/targetSdk 36 has already passed dependency/scope verification and D8/R8 debug plus minified-release packaging in CI. This closes the build/package validation gate.
 
-- Uses the agreed minimum Android API level and a maintained Android Gradle Plugin version.
-- Resolves the published Maven-local artifacts (or project dependencies in a dedicated fixture).
-- Runs D8/R8 as appropriate and catches unsupported Java API usage.
-- Exercises UTF-8, byte-array, and snapshot-loading code on the minimum supported API.
-- Verifies no Android framework dependency leaked into `tokenizer-core`.
-- Documents any desugaring requirement and tests release/minified packaging where relevant.
-
-Keep the production core free of Android framework types. Do not infer Android compatibility solely from Java 11 bytecode or from a desktop JVM consumer. The minimum Android API level is explicitly set to 33 by the consuming Argus application.
+The remaining gate is device-level execution after the runtime and CBOR codec exist: run the shared golden vectors, UTF-8 and arbitrary-byte round trips, bounded snapshot-loading cases, and typed-error tests on an Android API 33 emulator or physical device, then compare outputs with JVM results. Keep `tokenizer-core` free of Android framework types and document/test any required desugaring. Packaging success alone is not a device-runtime guarantee.
 
 ## 7. Required test strategy
 
@@ -232,7 +210,7 @@ Golden vectors should be versioned as test data and reused by JVM and future non
 4. **CBOR adapter:** add `tokenizer-format-cbor`, specify the exact schema and canonical digest input, then implement safe bounded parsing and writing.
 5. **Testkit:** publish reusable golden vectors and consumer contract tests; use test-scope dependency declarations.
 6. **BPE trainer:** implement the selected training data structure only after memory/streaming requirements are supported by a representative pilot corpus and benchmark.
-7. **Android validation:** add the Android consumer fixture and device tests before claiming Android support.
+7. **Android validation — PACKAGING COMPLETE:** run API 33 emulator/physical-device conformance tests after the runtime and CBOR codec exist; do not claim device-runtime support before those tests pass.
 8. **Algorithm comparison:** compare against a pinned Unigram reference implementation under the same permitted corpus and evaluation split. Add native Unigram only if evidence justifies the maintenance cost.
 9. **Release readiness:** complete format migration tests, compatibility matrix, API documentation, namespace verification, publication metadata/signing, and corpus-rights checks before a 1.0.0 or reference-vocabulary release.
 

@@ -12,15 +12,19 @@ The engine and trained tokenizer snapshots are separate deliverables. The engine
 
 ### tokenizer-core
 
-Owns stable runtime contracts: tokenizer configuration; normalization and pre-tokenization configuration; special-token definitions; vocabulary snapshots and token identity; encoding and decoding; tokenizer fingerprinting; and versioned serialization interfaces.
+Owns the immutable snapshot/domain model, runtime configuration, special-token definitions, token identity, encoded sequences, deterministic encoding/decoding, and runtime fingerprint value. It does not parse CBOR, access files, or depend on a persistence library.
 
-Core runtime behavior should be deterministic and side-effect free wherever practical.
+Core runtime behavior is immutable, deterministic, thread-safe, and side-effect free wherever practical.
 
 ### tokenizer-training
 
-Owns corpus validation and preprocessing, algorithm-specific training, incremental vocabulary evolution, candidate snapshot validation, and reproducibility metadata.
+Owns source-manifest validation, record-preserving corpus preprocessing, algorithm-specific training, incremental vocabulary evolution, candidate snapshot validation, and reproducibility metadata.
 
-Training must produce a candidate snapshot. Promotion to an active snapshot is an explicit operation controlled by the consuming application.
+The initial internal profile is byte-level BPE with a ranked byte-piece vocabulary. Training must produce a candidate immutable snapshot. Promotion to an active snapshot is an explicit operation controlled by the consuming application.
+
+### tokenizer-format-cbor (add when serialization implementation begins)
+
+Owns the versioned deterministic-CBOR reader/writer for .isqutok, bounded parsing, fingerprint verification, and format conformance. It depends on tokenizer-core; the core module must not depend on this adapter.
 
 ### tokenizer-testkit
 
@@ -30,14 +34,15 @@ Owns reusable contract fixtures and test helpers. It must not become a runtime d
 
 A vocabulary is more than a token count. It includes token strings or byte pieces, IDs, special-token assignments, merge rules or model scores, normalization settings, pre-tokenization settings, decoder behavior, and serialization metadata.
 
-Within a vocabulary lineage:
+Within the initial isqu-byte-bpe-v1 lineage:
 
-- Existing IDs are immutable.
-- New IDs are appended.
+- Special-token IDs occupy the reserved range [0, 32).
+- Byte IDs occupy [32, 288), with ID = 32 + unsigned byte value.
+- Learned byte pieces occupy [288, idSpaceSize) in increasing rank/ID order.
+- Existing IDs and their byte meanings are immutable; new special tokens or learned pieces use previously unassigned/appended IDs.
 - IDs are never recycled.
-- Special-token IDs are explicitly reserved and have active/inactive state.
-- Snapshot identity changes whenever encoding or decoding behavior changes.
-- The ID-space size is distinct from the number of active token entries.
+- idSpaceSize and activeTokenCount are distinct; reserved but unassigned special slots count toward ID space, not active entries.
+- Snapshot identity changes whenever runtime encoding or decoding behavior changes.
 
 The exact representation will be frozen in a versioned format specification before production use. The current portable-format proposal is documented in [Tokenizer Format and Persistence](tokenizer-format.md).
 
@@ -53,7 +58,7 @@ Preserving old token IDs does not by itself guarantee model compatibility. A cha
 
 ## 5. Algorithm selection
 
-No tokenizer algorithm is frozen by this scaffold. Byte-level BPE is the lead implementation candidate, while Unigram is a required comparison candidate and WordPiece is a secondary interoperability target. These are research priorities, not accepted public API commitments.
+The initial internal prototype profile is byte-level BPE with a ranked byte-piece vocabulary, NONE normalization, and no pre-tokenizer. This is accepted for a first vertical slice, not as a universal algorithm default. Unigram remains the required comparator before a stable default claim; WordPiece remains a secondary interoperability target. Exact selection criteria remain in Algorithm Research and Selection.
 
 Algorithm candidates must be evaluated against:
 
@@ -83,4 +88,4 @@ Training data must be governed by source-level provenance, rights, privacy, and 
 
 Changes to token identity, serialization, normalization, pre-tokenization, deterministic behavior, or compatibility guarantees require a documented decision. Proposed decisions do not become stable contracts until reviewed and accepted.
 
-See the [ADR index](adr/README.md).
+See the [ADR index](adr/README.md), especially ADR 0003: Initial runtime profile and snapshot identity.

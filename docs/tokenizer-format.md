@@ -63,7 +63,7 @@ Unknown runtime keys are rejected. A future normalizer, pre-tokenizer, decoder p
 
 Each special-token entry has exactly:
 - id: unsigned integer in [0, 32).
-- name: non-empty, case-sensitive ASCII identifier, unique within the snapshot.
+- name: case-sensitive ASCII identifier matching `[A-Za-z][A-Za-z0-9._-]{0,63}`, unique within the snapshot.
 - renderBytes: non-empty byte string containing valid UTF-8.
 
 Entries are sorted by increasing ID. New entries use the lowest unassigned reserved special-token ID. Existing entries are immutable and are never removed or rebound within a lineage.
@@ -196,7 +196,7 @@ A loader validates before exposing the snapshot:
 - Runtime fingerprint equality.
 - Unsupported algorithms, fields, IDs, or resource sizes produce typed errors.
 
-Parsing never performs network access or executes code. Raw source corpora and credentials are never embedded.
+Parsing never performs network access or executes code. Raw source corpora and credentials are never embedded. The pre-1.0 loader requires an explicit resource-limit object and rejects input before allocation when any configured bound is exceeded.
 
 ## 11. Interoperability
 

@@ -23,5 +23,6 @@ The project has not published a release yet.
 - Validated the modern build, JUnit 6, Java 21 consumer, and Android API 33 D8/R8 packaging in GitHub Actions run #8.
 - Accepted the initial byte-level BPE runtime profile, 32-slot special-token layout, lossless byte pipeline, deterministic CBOR schema, SHA-256 runtime fingerprint, and snapshot-lineage rules (ADR 0003).
 - Kept the first BPE profile internal/pre-1.0; Unigram comparison, source-cleared corpus admission, codec implementation, and cross-runtime conformance remain open gates.
+- Defined explicit bounded snapshot-loading requirements; no unbounded loader path or unmeasured mobile size preset is permitted.
 - Moved tokenizer-testkit to test-only consumer scope and removed its unnecessary production dependency on tokenizer-training.
 - No production tokenizer implementation, stable public API, or accepted snapshot format is included yet.

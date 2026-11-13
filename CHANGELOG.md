@@ -21,5 +21,7 @@ The project has not published a release yet.
 - Added separate JVM 25 test compilation/runtime for JUnit 6 and corrected consumer testkit dependency scopes.
 - Corrected the Android consumer test-scope assertion to inspect the declarative testImplementation bucket without resolving AGP's self-referencing unit-test variant; kept the API 33 smoke app Java-only.
 - Validated the modern build, JUnit 6, Java 21 consumer, and Android API 33 D8/R8 packaging in GitHub Actions run #8.
+- Accepted the initial byte-level BPE runtime profile, 32-slot special-token layout, lossless byte pipeline, deterministic CBOR schema, SHA-256 runtime fingerprint, and snapshot-lineage rules (ADR 0003).
+- Kept the first BPE profile internal/pre-1.0; Unigram comparison, source-cleared corpus admission, codec implementation, and cross-runtime conformance remain open gates.
 - Moved tokenizer-testkit to test-only consumer scope and removed its unnecessary production dependency on tokenizer-training.
 - No production tokenizer implementation, stable public API, or accepted snapshot format is included yet.

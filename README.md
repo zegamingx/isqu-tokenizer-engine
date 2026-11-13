@@ -21,7 +21,7 @@ A standalone Kotlin/JVM tokenizer library designed for local, deterministic, and
 | `tokenizer-training` | Corpus processing and controlled vocabulary/model training workflows. |
 | `tokenizer-testkit` | Shared test fixtures, compatibility vectors, and contract-test utilities. |
 
-Algorithms and public interfaces are not frozen. BPE, unigram, byte fallback, normalization, and pre-tokenization strategies will be evaluated before becoming compatibility commitments.
+Algorithms and public interfaces are not frozen. BPE, Unigram, byte fallback, normalization, and pre-tokenization remain research candidates until their behavior and compatibility requirements are accepted.
 
 ## Design invariants
 
@@ -35,16 +35,13 @@ Algorithms and public interfaces are not frozen. BPE, unigram, byte fallback, no
 
 ## Build environment
 
-- JDK 17 or newer to run the build.
-- Kotlin 2.4.21.
-- Gradle 9.7.0 (selected for the Kotlin Gradle plugin's fully supported compatibility range).
+The current Kotlin and Gradle versions are provisional. The build compatibility matrix, JVM target metadata, Gradle Wrapper, and consumer integration tests remain pending the dedicated build-and-compatibility validation stage.
 
-Generate the Gradle wrapper and build:
+- JDK toolchain currently configured in the modules: 17.
+- Kotlin Gradle Plugin: 2.4.21.
+- Gradle version currently documented for the project: 9.7.0.
 
-```bash
-gradle wrapper --gradle-version 9.7.0
-./gradlew clean build
-```
+The wrapper has not yet been generated. Do not treat the current build configuration as a validated release baseline.
 
 ## Dependency coordinates
 
@@ -54,9 +51,22 @@ The intended group ID is `io.github.zegamingx`; it remains provisional until nam
 
 ## Documentation
 
+### Architecture and contracts
+
 - [Architecture](docs/architecture.md)
+- [Tokenization contract](docs/tokenization-contract.md)
 - [Tokenizer format and persistence](docs/tokenizer-format.md)
 - [Compatibility policy](docs/compatibility-policy.md)
+- [Architecture Decision Records](docs/adr/README.md)
+
+### Research
+
+- [Algorithm research and selection](docs/algorithm-research.md)
+- [Corpus provenance, rights, and data governance](docs/corpus-provenance.md)
+- [Vocabulary sizing strategy and evaluation protocol (ADR 0001)](docs/adr/0001-vocabulary-sizing-and-evaluation.md)
+
+### Project maintenance
+
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)

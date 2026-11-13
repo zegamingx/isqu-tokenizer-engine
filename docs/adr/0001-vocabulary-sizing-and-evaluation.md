@@ -69,7 +69,7 @@ The initial sweep uses target ID-space sizes (including the reserved special slo
 
 Add `131,072` only when the available corpus, compute budget, and target consumer justify it. Do not start with 400k.
 
-For byte-level BPE with fixed base and deterministic training, one maximum-size training run can produce smaller prefix snapshots by truncating the ordered merge list. This is a useful property, not an assumption to leave untested. The implementation must prove that each prefix snapshot is identical to a direct run stopped at that merge count under the same corpus, preprocessing, trainer version, and tie-breaking rules.
+For byte-level BPE with fixed base and deterministic training, one maximum-size training run can produce smaller prefix snapshots by truncating the rank-ordered learned-piece list. This is a useful property, not an assumption to leave untested. The implementation must prove that each prefix snapshot is identical to a direct run stopped at that merge count under the same corpus, preprocessing, trainer version, and tie-breaking rules.
 
 Unigram vocabularies are not merge prefixes. They require separate target-size runs or a separately specified pruning path. Do not represent Unigram as if it had BPE's nested-vocabulary property.
 

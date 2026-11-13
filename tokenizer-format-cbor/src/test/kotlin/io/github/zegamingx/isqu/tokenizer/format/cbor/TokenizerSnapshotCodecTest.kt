@@ -187,9 +187,11 @@ class TokenizerSnapshotCodecTest {
     fun unsupportedFormatVersionIsRejectedExplicitly() {
         val encoded = TokenizerSnapshotCodec.encode(snapshot())
         val versionKey = "formatVersion".toByteArray(Charsets.UTF_8)
-        val valueOffset = encoded.indexOfSequence(versionKey) + 1 + versionKey.size
-        check(valueOffset > versionKey.size)
-        check(encoded[valueOffset].toInt() == 1)
+        val keyStart = encoded.indexOfSequence(versionKey)
+        check(keyStart > 0)
+        check((encoded[keyStart - 1].toInt() and 0xff) == 0x6d)
+        val valueOffset = keyStart + versionKey.size
+        check((encoded[valueOffset].toInt() and 0xff) == 1)
         encoded[valueOffset] = 2
 
         val exception = assertThrows(UnsupportedTokenizerFormatVersionException::class.java) {

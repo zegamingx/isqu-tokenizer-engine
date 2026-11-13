@@ -13,7 +13,7 @@ A subword tokenizer has at least two distinct jobs:
 1. **Training:** derive a vocabulary/model from a permitted corpus and explicit configuration.
 2. **Runtime:** apply the frozen model to new input and return token IDs.
 
-The learned artifact is not just a vocabulary list. It may include ordered merge rules or scores, special-token assignments, normalization, pre-tokenization, and decoder settings.
+The learned artifact is not just a vocabulary list. Depending on the algorithm, it may include ranked byte pieces or model scores, special-token assignments, normalization, pre-tokenization, and decoder settings.
 
 ## 2. Candidate algorithms
 

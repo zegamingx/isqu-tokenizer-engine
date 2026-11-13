@@ -1,228 +1,224 @@
 # Tokenizer Format and Persistence
 
-- **Status:** Draft 0.1; proposed portable representation, not a stable format
-- **Applies to:** tokenizer-core, tokenizer-training, format adapters
+- **Status:** Version-1 design accepted for internal implementation; not a stable public file format
+- **Applies to:** tokenizer-core, tokenizer-training, tokenizer-format-cbor
 - **Last reviewed:** 2026-11-13
+- **Normative design decision:** [ADR 0003](adr/0003-initial-runtime-profile.md)
 
-## 1. Goals
+## 1. Goals and boundary
 
-A tokenizer snapshot must be a self-contained, versioned data artifact that can be interpreted independently of Kotlin, Android, a particular JDK, or a specific neural model implementation.
+A tokenizer snapshot is a self-contained, versioned data artifact interpretable independently of Kotlin, Android, a particular JDK, or a specific neural model implementation.
 
-The format must:
+It stores tokenizer runtime state and optional provenance. It does not store neural weights, embeddings, optimizer state, model architecture, training examples, raw corpora, or application state.
 
-- Preserve token IDs and all data required for deterministic encoding and decoding.
-- Record algorithm identity and algorithm version.
-- Record every normalization, pre-tokenization, special-token, and decoding setting that affects behavior.
-- Support safe loading with structural and resource-bound validation.
-- Support stable fingerprints for checkpoint references and snapshot identity.
-- Carry provenance metadata without making training history part of the runtime's encoding semantics.
-- Permit independent implementations in Kotlin/JVM, Python, C++, Rust, or other languages.
+The initial version-1 runtime profile is byte-level-bpe-rank. Unigram and WordPiece require separate model representations and are not silently mapped into the BPE schema.
 
-The format does not store neural weights, embeddings, optimizer state, model architecture, training examples, or application state.
+## 2. Container and deterministic CBOR profile
 
-## 2. Proposed container
+The proposed file extension is .isqutok. The artifact is one CBOR data item whose top-level value is a map.
 
-The current proposal is a single deterministic CBOR document using the core deterministic encoding requirements from [RFC 8949](https://www.rfc-editor.org/rfc/rfc8949).
+Version 1 uses RFC 8949 core deterministic encoding requirements (Section 4.2.1):
 
-- File extension proposal: `.isqutok`.
-- Top-level object: a CBOR map.
-- Byte strings are used for opaque token bytes and fingerprints.
-- Text strings are UTF-8.
-- Maps use deterministic key ordering and deterministic encodings.
-- Definite-length arrays, maps, byte strings, and text strings are required.
-- Duplicate map keys, non-minimal encodings, unsupported simple values, and malformed CBOR are rejected.
-- No executable payloads, scripts, dynamic class names, or arbitrary plugin references are permitted.
+- Preferred/shortest encodings are required for integers and lengths.
+- Indefinite-length arrays, maps, byte strings, and text strings are prohibited.
+- Map keys are UTF-8 text strings sorted by the bytewise lexicographic order of their deterministic CBOR encodings. Do not use the older length-first ordering.
+- Duplicate map keys are rejected.
+- Text strings must be valid UTF-8.
+- CBOR tags and floating-point values are not used in version 1.
+- No scripts, executable payloads, dynamic class names, or arbitrary plugin references are permitted.
 
-CBOR is proposed because it is language-independent, supports binary token data without lossy text conversions, and has a defined deterministic-encoding profile. JSON may be offered as a diagnostic/debug export, but it is not the canonical artifact representation.
+Canonical JSON is not the artifact format. JSON may be generated as a diagnostic representation only.
 
-Compression, transport, and package distribution are separate concerns. If compression is added later, the decompressed canonical CBOR bytes must remain identical and the compression algorithm must be declared outside the runtime semantics.
+## 3. Exact version-1 top-level schema
 
-## 3. Top-level schema proposal
+The top-level map contains exactly these keys:
 
-The logical top-level map contains:
+| Key | CBOR type | Rule |
+| --- | --- | --- |
+| format | Text string | Required; exact value isqu-tokenizer |
+| formatVersion | Unsigned integer | Required; exact value 1 |
+| runtime | Map | Required; exact closed schema in section 4 |
+| runtimeFingerprint | Byte string | Required; exactly 32 bytes |
+| provenance | Map | Optional; metadata only and excluded from the runtime fingerprint |
 
-| Field | Purpose |
+Unknown top-level keys are rejected in format version 1.
+
+## 4. Exact runtime schema
+
+The runtime map contains exactly these keys:
+
+| Key | CBOR type and exact value |
 | --- | --- |
-| `format` | Fixed identifier: `isqu-tokenizer` |
-| `formatVersion` | Integer format version, initially proposed as `1` |
-| `runtime` | Complete encoding/decoding contract and algorithm data |
-| `runtimeFingerprint` | SHA-256 fingerprint of the canonical format identifier, version, and runtime map |
-| `provenance` | Training, corpus, and lineage metadata; not executable |
-| `extensions` | Optional namespaced metadata with explicitly defined compatibility rules |
+| algorithm | Map with name = byte-level-bpe-rank and version = 1 |
+| idLayout | Map with the exact isqu-byte-bpe-v1 ranges and token ID type from section 5 |
+| specialTokens | Array of maps { id, name, renderBytes }, sorted by increasing id |
+| normalizer | Map containing exactly type = none |
+| preTokenizer | Map containing exactly type = none |
+| decoder | Map containing type = byte-concatenation, textEncoding = utf-8, invalidUtf8 = error, specialTokenPolicy = render-bytes |
+| model | Map containing mergeablePieces, an array of byte strings in increasing rank order |
 
-Illustrative diagnostic shape (not the literal canonical CBOR encoding):
+Unknown runtime keys are rejected. A future normalizer, pre-tokenizer, decoder policy, algorithm family, or runtime field requires an explicitly versioned schema change.
 
-```json
-{
-  "format": "isqu-tokenizer",
-  "formatVersion": 1,
-  "runtime": {
-    "algorithm": {},
-    "idLayout": {},
-    "specialTokens": [],
-    "normalizer": {},
-    "preTokenizer": {},
-    "decoder": {},
-    "model": {}
-  },
-  "runtimeFingerprint": "sha256:<32-byte-digest>",
-  "provenance": {}
-}
-```
+### 4.1 Special-token entries
 
-The exact field numbers/types and binary encoding are still subject to schema review. The example is illustrative, not a finalized public wire contract.
+Each special-token entry has exactly:
+- id: unsigned integer in [0, 32).
+- name: non-empty, case-sensitive ASCII identifier, unique within the snapshot.
+- renderBytes: non-empty byte string containing valid UTF-8.
 
-## 4. Runtime section
+Entries are sorted by increasing ID. New entries use the lowest unassigned reserved special-token ID. Existing entries are immutable and are never removed or rebound within a lineage.
 
-The runtime section contains only data that changes token IDs, token interpretation, or decoded output.
+The engine does not assign meaning to names such as BOS, EOS, pad, user, or assistant. Consumers define their meaning.
 
-It must include:
+### 4.2 Ranked BPE pieces
 
-- Algorithm name and algorithm version.
-- ID-layout scheme and all reserved ranges.
-- Active special tokens and their IDs, byte/string spellings, types, and matching semantics.
-- Base alphabet definition.
-- Algorithm-specific vocabulary/model data.
-- Normalizer type, version, and complete configuration.
-- Pre-tokenizer type, version, Unicode data version where relevant, and complete configuration.
-- Decoder mode and invalid-byte handling policy.
-- Any algorithm option that changes deterministic segmentation.
+model.mergeablePieces is an array of byte strings. For array index i, the implicit token ID/rank is 288 + i.
 
-A default value that affects behavior must still be represented explicitly or be normatively fixed by the format version. Loaders must not silently substitute implementation-local defaults.
+Each learned piece:
+- contains at least two bytes;
+- is unique across the base-byte alphabet and all earlier learned pieces;
+- is constructible by concatenating two pieces that already existed at lower ranks;
+- is stored in rank order and is never sorted lexically during serialization.
 
-## 5. Byte-level BPE model proposal
+The rank table itself is the BPE merge model. A separate pair-to-output merge table is not stored. During encoding, an adjacent pair is a candidate when its concatenated bytes exist in the piece-to-ID table. The candidate with the lowest token ID is merged first; an equal-rank occurrence is resolved by choosing the leftmost position. The process repeats until no candidate remains.
 
-For a byte-level BPE snapshot:
+This is a rank-based byte-pair merge contract. It must not be replaced by a greedy longest-match algorithm or an unordered vocabulary lookup.
 
-- The base alphabet is exactly the 256 byte values `0x00` through `0xFF`.
-- The proposed ID layout reserves `S` IDs for special tokens, places byte IDs at `S` through `S + 255`, and places merge outputs after the byte range.
-- `S = 32` remains a proposal and is not frozen.
-- The model stores an ordered list of merge input pairs.
-- For merge index `i` beginning at zero, the output ID is implied as `S + 256 + i`.
-- A merge pair contains two existing token IDs; both input IDs must be lower than the implied output ID.
-- The output token byte sequence is the concatenation of the two input token byte sequences.
-- The merge order is semantically significant and must not be sorted during serialization or loading.
+## 5. Version-1 ID layout and size definitions
 
-The format must distinguish `idSpaceSize`, `activeTokenCount`, `reservedSpecialCapacity`, and `mergeCount`. Do not expose a single ambiguous `vocabSize` field until its meaning is fixed.
+The idLayout map contains exactly:
 
-If an unassigned reserved special-token slot is activated later, that creates a new snapshot. An existing ID must never be silently reassigned.
+| Key | Type | Value |
+| --- | --- | ---: |
+| scheme | Text string | isqu-byte-bpe-v1 |
+| tokenIdType | Text string | non-negative-int32 |
+| specialTokenBase | Unsigned integer | 0 |
+| specialTokenCapacity | Unsigned integer | 32 |
+| byteTokenBase | Unsigned integer | 32 |
+| byteTokenCount | Unsigned integer | 256 |
+| mergeTokenBase | Unsigned integer | 288 |
 
-A smaller BPE vocabulary may be represented by a merge-list prefix only when its byte base, special-token layout, normalizer, pre-tokenizer, and merge order are identical. Its runtime fingerprint is still different because segmentation behavior changes.
+The base byte mapping is fixed: for an unsigned input byte value b in [0, 255], the token ID is 32 + b.
 
-## 6. Unigram and other algorithm data
+Definitions:
+- mergeablePieceCount = model.mergeablePieces.length.
+- idSpaceSize = 288 + mergeablePieceCount.
+- activeTokenCount = 256 + specialTokens.length + mergeablePieceCount.
+- reservedSpecialCapacity = 32.
+- idSpaceSize - activeTokenCount is the number of still-unassigned special-token slots.
+- idSpaceSize must not exceed Int.MAX_VALUE; all token IDs therefore fit a non-negative Kotlin/Java Int.
 
-The format must not force every tokenizer algorithm into the BPE merge-list representation.
+For an embedding or untied output-projection table, the number of rows must cover idSpaceSize, not activeTokenCount. This is why the public contract avoids an unqualified vocabSize field.
 
-A Unigram model needs an ordered vocabulary of pieces, stable IDs, scores, base/fallback policy, normalizer, pre-tokenizer, and a defined best-path/tie-breaking contract. Scores must use a precisely specified numeric representation. If IEEE-754 values are used, NaN and infinities are rejected and tie behavior is explicit.
+The vocabulary sweep's target sizes are target ID-space sizes. With the fixed 288-ID base layout, a target of 1,024 contains 736 learned pieces.
 
-Future model kinds may define algorithm-specific maps. A loader that does not support the model kind/version must fail with a typed unsupported-algorithm error; it must not attempt to interpret the data as BPE.
+## 6. Normalization, pre-tokenization, and text/byte behavior
 
-## 7. Runtime fingerprint and artifact integrity
+Version 1 fixes both the normalizer and pre-tokenizer to NONE. There are no implicit whitespace, word, punctuation, regex, grapheme, or Unicode-property boundaries.
 
-Two different hashes serve different purposes.
+- Text input is validated as well-formed UTF-16, then encoded as UTF-8.
+- Raw-byte input accepts arbitrary byte arrays, including sequences that are not valid UTF-8.
+- Learned pieces may end inside a UTF-8 code point.
+- Decoding concatenates all piece bytes before strict UTF-8 validation.
+- Invalid UTF-8 in a text-decoding request is a typed error; replacement characters are never inserted silently.
+- Special tokens are not auto-detected in ordinary text. The caller inserts them through a typed operation.
+- Decoder render mode emits a special token's renderBytes. Skipping special tokens is an explicit decode option.
 
-### Runtime fingerprint
+A future normalizer or pre-tokenizer must be separately named/versioned, included in the runtime fingerprint, and independent of host JDK/Android Unicode defaults.
 
-The proposed runtime fingerprint input is a canonical map containing the format identifier, format version, and runtime section:
+## 7. Runtime fingerprint
 
-`SHA-256(deterministic-CBOR({ format, formatVersion, runtime }))`
+The runtime fingerprint is the SHA-256 digest of the deterministic CBOR encoding of exactly this three-entry map:
 
-It covers every field that can affect encoding, decoding, token IDs, special-token matching, or normalization, and domain-separates the digest by format identifier and format version. Any extension that affects runtime behavior must live inside the fingerprinted runtime section. It excludes provenance-only fields such as timestamps, corpus URLs, author metadata, and training host information.
+    { "format": "isqu-tokenizer", "formatVersion": 1, "runtime": <runtime-map> }
 
-This allows two artifacts with different provenance metadata but identical tokenizer behavior to have the same runtime fingerprint.
+Formally:
 
-### Artifact digest
+    runtimeFingerprintInput = deterministicCbor({format, formatVersion, runtime})
+    runtimeFingerprint = SHA-256(runtimeFingerprintInput)
 
-The complete file may have a separate SHA-256 digest distributed in a sidecar checksum or release metadata. It covers the full file, including provenance and extensions.
+The stored runtimeFingerprint field is excluded from the input. The optional provenance map is also excluded. Therefore:
+- every field that affects encoding, decoding, token IDs, special-token rendering, or model behavior is fingerprinted;
+- provenance-only changes do not change tokenizer identity;
+- any change to algorithm, ID layout, special tokens, normalization, pre-tokenization, decoder behavior, or model pieces does.
 
-Neither value is a digital signature. Release signatures and build provenance are distribution/security concerns and will be specified separately.
+The fingerprint is stored as a raw 32-byte CBOR byte string. It is an identity/integrity check, not a digital signature or proof of source rights.
 
-## 8. Snapshot lineage and evolution
+## 8. Provenance and lineage metadata
 
-A snapshot should carry lineage metadata:
+The optional provenance map may contain only these version-1 fields:
 
-- Stable lineage-root fingerprint.
-- Optional parent runtime fingerprint.
-- Monotonic snapshot sequence within that lineage.
-- Trainer and algorithm versions.
-- Training configuration and corpus-manifest digest.
+| Key | CBOR type | Meaning |
+| --- | --- | --- |
+| lineageRootFingerprint | 32-byte byte string | Runtime fingerprint of the root snapshot |
+| parentRuntimeFingerprint | Optional 32-byte byte string | Immediate parent snapshot |
+| snapshotSequence | Unsigned integer | Zero for root; parent sequence + 1 for a child |
+| trainerName | Optional text string | Trainer identifier |
+| trainerVersion | Optional text string | Trainer version |
+| trainerRevision | Optional text string | Trainer source revision |
+| trainingConfigSha256 | Optional 32-byte byte string | Canonical training configuration digest |
+| corpusManifestSha256 | Optional 32-byte byte string | Versioned source-manifest digest |
+| seed | Optional unsigned integer | Training seed, where applicable |
+| createdAt | Optional RFC 3339 text string | Snapshot creation timestamp |
 
-Lineage metadata does not override runtime compatibility. The runtime fingerprint identifies behavior; parent/root information describes how the snapshot was produced.
+When provenance is present, lineageRootFingerprint and snapshotSequence are required. A root uses sequence zero, has no parent, and stores its own runtime fingerprint as the lineage root. A child records the immediate parent fingerprint and increments the sequence by one. If provenance is absent, the snapshot remains usable but its lineage is unknown; a reader must not infer it.
+
+Unknown keys in provenance are rejected in version 1. New metadata requires a defined schema update.
+
+## 9. Lineage and compatibility rules
 
 Within a lineage:
-
-- Existing token IDs remain immutable.
-- New IDs are appended.
+- Existing token IDs and byte meanings are immutable.
+- New special tokens may be appended into unused reserved slots.
+- New ranked pieces are appended; old piece IDs and ranks are not changed.
 - IDs are never recycled.
-- A changed normalizer, pre-tokenizer, decoder, or algorithm contract produces a new runtime fingerprint and may require a new lineage.
-- Vocabulary extension does not imply compatibility with an existing neural checkpoint.
+- A special token's existing name/render bytes may not be edited in place.
 
-A model checkpoint must store the exact runtime fingerprint it expects. A consumer must verify it before inference, evaluation, or training.
+Appending a BPE piece or a new special token changes the runtime fingerprint even when the lineage remains the same.
 
-## 9. Provenance section
+The following changes start a new lineage: ID-layout scheme or byte mapping changes, algorithm/rank semantics changes, normalizer or pre-tokenizer changes, decoder behavior changes, or mutation of any existing token's bytes/meaning.
 
-Provenance metadata should record, when applicable:
+A smaller BPE snapshot may be represented by a ranked-piece prefix only when its base layout, special-token assignments, normalizer, pre-tokenizer, decoder, and piece prefix are identical. Its runtime fingerprint still differs from the larger snapshot.
 
-- Trainer name, version, source revision, and build identifier.
-- Algorithm configuration and seed.
-- Corpus manifest ID and SHA-256 digest.
-- Source dataset names, versions, URLs, retrieval dates, and declared licenses.
-- Content-rights review state and attribution obligations.
-- Preprocessing pipeline revision and Unicode data version.
-- Training timestamp and environment metadata.
-- Parent snapshot and lineage information.
-
-Do not embed raw private corpora, credentials, personal data, or unrestricted source documents in a tokenizer snapshot. Provenance metadata is not proof that source rights were cleared; the corpus manifest and rights review remain separate required records.
+Preserving IDs does not preserve segmentation. Model checkpoints must store the exact tokenizer fingerprint they expect. Consumers reject fingerprint mismatch by default; embedding resizing, model adaptation, and evaluation against a changed snapshot are explicit consumer-owned migration steps.
 
 ## 10. Safe loading and validation
 
-A loader must validate before exposing a snapshot:
+A loader validates before exposing the snapshot:
 
-- Magic/format identifier and supported format version.
-- Structural nesting and declared array/map lengths.
-- Maximum file size, token count, token byte length, merge count, and metadata size against configurable limits.
-- Duplicate IDs and duplicate special-token assignments.
-- Valid reserved-ID ranges and active/inactive slot states.
-- All merge references and implied output IDs.
-- Model-specific invariants, such as valid scores and deterministic merge ordering.
-- Normalizer/pre-tokenizer support and data-version compatibility.
-- Runtime fingerprint and optional whole-artifact digest.
-- UTF-8 validity for fields defined as text strings.
-- No unsupported executable or extension behavior.
+- Format identifier and supported format version.
+- Closed-schema top-level/runtime/provenance keys.
+- CBOR structure, duplicate keys, deterministic encoding, UTF-8 text validity, and definite lengths.
+- Maximum file size, nesting depth, map/array lengths, metadata size, mergeable-piece count, and piece byte length against configured resource limits before allocation.
+- Correct ID ranges, unique special IDs/names, valid render bytes, and assigned-slot ordering.
+- Unique learned pieces, valid piece lengths, rank order, and at least one valid lower-rank split for every learned piece.
+- Exact normalizer/pre-tokenizer/decoder profile support.
+- Runtime fingerprint equality.
+- Unsupported algorithms, fields, IDs, or resource sizes produce typed errors.
 
-Unknown mandatory runtime fields must cause a clear unsupported-format/feature error. Unknown provenance metadata may be ignored only when the format version explicitly permits it.
-
-Parsing must not allocate from untrusted lengths before validating bounds. Loading must not trigger network access or code execution.
+Parsing never performs network access or executes code. Raw source corpora and credentials are never embedded.
 
 ## 11. Interoperability
 
-Adapters may import or export known formats such as SentencePiece and Hugging Face tokenizer JSON, subject to explicit compatibility checks.
+Adapters may import or export known formats such as SentencePiece model files and Hugging Face tokenizer JSON, but must explicitly classify conversion:
 
-An adapter must report whether conversion is:
-
-- **Lossless:** all runtime semantics and IDs are preserved.
-- **Semantics-preserving with ID remapping:** tokenization behavior is preserved but token IDs change, and a mapping is emitted.
+- **Lossless:** runtime behavior and token IDs are preserved.
+- **Semantics-preserving with ID remapping:** tokenization behavior is preserved but IDs change, and a mapping is emitted.
 - **Lossy/unsupported:** some normalizer, pre-tokenizer, byte fallback, special-token, or decoder behavior cannot be represented.
 
-An adapter must never label a conversion "compatible" solely because token strings look similar. The converted snapshot must pass shared golden vectors. SentencePiece model metadata demonstrates why trainer, normalizer, model pieces, and decoder behavior must travel together.
+Conversion must pass shared golden vectors. Similar token strings alone do not establish compatibility. Unigram and WordPiece cannot be represented as the version-1 ranked BPE model.
 
-## 12. Versioning policy proposal
+## 12. Versioning and implementation boundary
 
-The tokenizer file-format version is independent from the library's Maven version.
+The file-format version is independent of the Maven library version. Version 1 is the accepted design for the internal initial runtime profile, but it is not a stable public compatibility promise until the codec and its conformance suite are implemented and released.
 
-- A format-major change is required when a reader cannot safely interpret the previous semantics.
-- Backward-compatible optional metadata can be added only under explicit rules.
-- A reader must reject unknown mandatory features.
-- A migration must be explicit and produce a new fingerprint.
-- Old snapshots must remain readable for the support window declared by the library release policy.
-
-No stable format compatibility guarantee is made before the format is accepted and implemented with conformance tests.
+Unknown mandatory features are rejected. Format migrations are explicit and produce a new fingerprint. The engine's Apache-2.0 software license does not grant rights in corpus text or derived artifacts.
 
 ## References
 
-- [RFC 8949: Concise Binary Object Representation (CBOR)](https://www.rfc-editor.org/rfc/rfc8949)
-- [SentencePiece model protobuf schema](https://github.com/google/sentencepiece/blob/master/src/sentencepiece_model.proto)
-- [SentencePiece model metadata](https://github.com/google/sentencepiece/blob/master/doc/model_proto.md)
-- [Hugging Face Tokenizers model API](https://huggingface.co/docs/tokenizers/main/en/api/models)
+- [RFC 8949, Section 4.2.1: Core Deterministic Encoding Requirements](https://www.rfc-editor.org/rfc/rfc8949.html#section-4.2.1)
+- [tiktoken byte-pair merge implementation](https://github.com/openai/tiktoken/blob/main/src/lib.rs)
+- [SentencePiece: a simple language-independent tokenizer](https://arxiv.org/abs/1808.06226)
+- [SentencePiece model schema](https://github.com/google/sentencepiece/blob/master/src/sentencepiece_model.proto)
 - [Unicode Normalization Forms, UAX #15](https://www.unicode.org/reports/tr15/)
 - [Unicode Text Segmentation, UAX #29](https://www.unicode.org/reports/tr29/)

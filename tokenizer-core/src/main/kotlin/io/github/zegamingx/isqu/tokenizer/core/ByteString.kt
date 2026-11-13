@@ -54,7 +54,7 @@ class ByteString private constructor(private val content: ByteArray) {
         return if (content.size <= previewLength) {
             "ByteString($preview)"
         } else {
-            "ByteString($preview…; size=undefined)"
+            "ByteString($preview…; size=${content.size})"
         }
     }
 

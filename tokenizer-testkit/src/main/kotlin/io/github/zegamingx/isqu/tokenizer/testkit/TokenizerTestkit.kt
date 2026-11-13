@@ -128,6 +128,12 @@ object TokenizerTestkit {
         check(extended.mergeablePieces.size >= previous.mergeablePieces.size) {
             "An extended snapshot cannot remove learned pieces"
         }
+        for (byteValue in 0 until TokenizerSnapshot.BYTE_TOKEN_COUNT) {
+            val tokenId = TokenizerSnapshot.BYTE_TOKEN_BASE + byteValue
+            check(previous.tokenBytes(tokenId) == extended.tokenBytes(tokenId)) {
+                "Base byte token ID $tokenId was reassigned"
+            }
+        }
         for (index in previous.mergeablePieces.indices) {
             check(extended.mergeablePieces[index] == previous.mergeablePieces[index]) {
                 "Learned token ID ${TokenizerSnapshot.MERGE_TOKEN_BASE + index} was reassigned"

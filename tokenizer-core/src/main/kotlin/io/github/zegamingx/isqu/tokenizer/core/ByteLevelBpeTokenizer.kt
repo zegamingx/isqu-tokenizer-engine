@@ -111,6 +111,11 @@ class ByteLevelBpeTokenizer(
      * Inserts special-token IDs only through typed segments. Plain encodeText
      * and encodeBytes always treat special-token spellings as ordinary data.
      */
+    fun encodeSpecialToken(tokenName: String): Int {
+        return snapshot.specialTokenByName(tokenName)?.id
+            ?: throw UnknownSpecialTokenNameException(tokenName)
+    }
+
     fun encodeSegments(segments: List<TokenizerSegment>): IntArray {
         val output = ArrayList<Int>()
         for (segment in segments) {
@@ -126,6 +131,9 @@ class ByteLevelBpeTokenizer(
                         throw UnknownTokenIdException(segment.id)
                     }
                     output.add(segment.id)
+                }
+                is TokenizerSegment.SpecialByName -> {
+                    output.add(encodeSpecialToken(segment.name))
                 }
             }
         }
@@ -214,4 +222,5 @@ class ByteLevelBpeTokenizer(
 sealed class TokenizerSegment {
     data class Text(val value: String) : TokenizerSegment()
     data class Special(val id: Int) : TokenizerSegment()
+    data class SpecialByName(val name: String) : TokenizerSegment()
 }

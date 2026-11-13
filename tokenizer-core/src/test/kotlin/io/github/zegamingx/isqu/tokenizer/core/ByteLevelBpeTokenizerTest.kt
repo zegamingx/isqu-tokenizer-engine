@@ -103,6 +103,11 @@ class ByteLevelBpeTokenizerTest {
 
         assertNotEquals(listOf(0), plainIds.toList())
         assertEquals("a<BOS>b", tokenizer.decodeText(typedIds))
+        assertEquals(
+            listOf(0),
+            tokenizer.encodeSegments(listOf(TokenizerSegment.SpecialByName("bos"))).toList(),
+        )
+        assertEquals("ab", tokenizer.decodeText(typedIds, skipSpecialTokens = true))
     }
 
     @Test

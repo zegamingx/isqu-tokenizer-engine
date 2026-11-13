@@ -16,6 +16,7 @@ rootProject.name = "isqu-tokenizer-engine"
 
 include(
     ":tokenizer-core",
+    ":tokenizer-format-cbor",
     ":tokenizer-training",
     ":tokenizer-testkit",
 )

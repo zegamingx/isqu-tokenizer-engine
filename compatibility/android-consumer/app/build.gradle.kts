@@ -66,6 +66,10 @@ tasks.register("verifyAndroidArtifacts") {
             "tokenizer-testkit must not leak onto the Android production classpath"
         }
 
+        check("isqu-tokenizer-format-cbor" !in productionArtifacts) {
+            "The CBOR format adapter must not leak onto the Android production classpath"
+        }
+
         val testDependencies = configurations.getByName("testImplementation").dependencies
         check(
             testDependencies.any { dependency ->
@@ -74,6 +78,14 @@ tasks.register("verifyAndroidArtifacts") {
             },
         ) {
             "tokenizer-testkit must be declared under testImplementation"
+        }
+        check(
+            testDependencies.none { dependency ->
+                dependency.group == "io.github.zegamingx" &&
+                    dependency.name == "isqu-tokenizer-format-cbor"
+            },
+        ) {
+            "tokenizer-format-cbor must be provided transitively by tokenizer-testkit, not declared directly"
         }
 
         productionArtifacts.forEach { (moduleName, artifact) ->

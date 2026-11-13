@@ -63,8 +63,15 @@ tasks.register("verifyPublishedArtifacts") {
         }
 
         val testArtifacts = resolvedIsquArtifacts("testCompileClasspath")
-        check("isqu-tokenizer-testkit" in testArtifacts) {
-            "tokenizer-testkit must be available on the test compile classpath"
+        val requiredTestOnlyModules = setOf(
+            "isqu-tokenizer-testkit",
+            "isqu-tokenizer-format-cbor",
+        )
+        check(testArtifacts.keys.containsAll(requiredTestOnlyModules)) {
+            "Test classpath is missing ISQU test-only modules: ${requiredTestOnlyModules - testArtifacts.keys}"
+        }
+        check("isqu-tokenizer-format-cbor" !in productionArtifacts) {
+            "The CBOR format adapter must not leak onto the production compile classpath"
         }
 
         val allResolvedArtifacts = productionArtifacts + testArtifacts
@@ -112,6 +119,12 @@ tasks.register("verifyPublishedArtifacts") {
                     pom.contains("<artifactId>isqu-tokenizer-core</artifactId>"),
                 ) {
                     "tokenizer-training POM does not expose tokenizer-core as an API dependency"
+                }
+
+                "isqu-tokenizer-format-cbor" -> check(
+                    pom.contains("<artifactId>isqu-tokenizer-core</artifactId>"),
+                ) {
+                    "tokenizer-format-cbor POM does not expose tokenizer-core as an API dependency"
                 }
 
                 "isqu-tokenizer-testkit" -> {

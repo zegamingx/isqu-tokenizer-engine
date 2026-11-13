@@ -20,7 +20,7 @@ The repository is ready for a deliberately narrow internal prototype after the P
 | Algorithm selection | **CONDITIONAL** | Byte-level BPE is the lead prototype candidate; Unigram remains a required comparator. |
 | Corpus admission | **BLOCKED FOR REFERENCE TRAINING** | No exact source manifest has received final approval for the intended training and artifact-distribution use. |
 | JVM consumer compatibility | **PASS FOR CURRENT SMOKE TEST** | Java 11/Kotlin 2.4 consumer compilation and published metadata were checked. |
-| Android compatibility | **NOT VALIDATED** | No Android Gradle Plugin/D8 consumer or device test exists in the current fixture. |
+| Android API 33 packaging | **PASS WITH LIMITATION** | Android consumer fixture resolves the Maven artifacts and assembles debug/release packages through D8/R8 with minSdk 33. |\n| Android API 33 runtime | **NOT DEVICE-VALIDATED** | No API 33 emulator or physical-device execution has been performed yet. |
 | Behavioral test strategy | **DEFINED, NOT IMPLEMENTED** | Contract vectors and failure cases are listed, but no production code or tokenizer tests exist. |
 
 The correct next step is a small, internal byte-level BPE vertical slice—not a broad public API or a complete multi-algorithm framework.
@@ -245,6 +245,6 @@ Do not block correctness implementation on expensive model-level BPB experiments
 
 **G7 audit: COMPLETE. Implementation readiness: CONDITIONAL.**
 
-The project can proceed with an internal, non-stable BPE runtime prototype after P0-1 through P0-5 are recorded as explicit decisions. A distributable reference vocabulary additionally requires P0-6. Android support remains unclaimed until the Android fixture and minimum-API validation pass.
+The project can proceed with an internal, non-stable BPE runtime prototype after P0-1 through P0-5 are recorded as explicit decisions. A distributable reference vocabulary additionally requires P0-6. Android dependency and D8/R8 packaging validation now pass in CI; on-device API 33 runtime support remains unclaimed until emulator or physical-device conformance tests pass.
 
 No production implementation, stable public API, accepted format version, approved general-purpose corpus, Maven Central release, or Android compatibility claim is created by this audit.

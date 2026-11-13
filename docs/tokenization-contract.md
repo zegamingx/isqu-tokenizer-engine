@@ -1,6 +1,6 @@
 # Tokenization Contract
 
-- **Status:** Draft 0.1; behavioral contract under review
+- **Status:** Initial runtime behavior accepted for internal implementation; public API remains pre-1.0
 - **Applies to:** tokenizer-core, tokenizer-testkit, format adapters
 - **Last reviewed:** 2026-11-13
 
@@ -26,7 +26,7 @@ Tokenizer training belongs to `tokenizer-training`. Adoption and migration of a 
 
 ### 2.1 Kotlin/JVM text input
 
-Kotlin/JVM `String` values are UTF-16 sequences. The text API must validate that surrogate pairs are well-formed before UTF-8 conversion. An unpaired high or low surrogate must fail with a typed input error; silently replacing it would make round-trip behavior ambiguous.
+Kotlin/JVM `String` values are UTF-16 sequences. The text API must validate that surrogate pairs are well-formed before UTF-8 conversion. An unpaired high or low surrogate must fail with a typed input error; silently replacing it would make round-trip behavior ambiguous. This is mandatory for the initial byte-level BPE profile.
 
 For a valid Unicode string, the byte-level path uses its UTF-8 representation. The tokenizer must not assume that one Unicode code point, grapheme cluster, UTF-16 code unit, UTF-8 byte, and token are interchangeable units.
 
@@ -52,10 +52,10 @@ The strict text decoder must report malformed UTF-8 in generated token sequences
 
 Normalization changes the representation of text and can change the bytes recovered by decoding. It must therefore be an explicit, fingerprinted part of a snapshot.
 
-Proposed initial policy:
+Accepted initial policy:
 
-- `NONE` is the lossless reference mode.
-- NFC may be evaluated as an optional normalizer.
+- `NONE` is the only normalizer in the initial byte-level BPE profile.
+- NFC may be evaluated later as a separately versioned profile; it is not part of the initial runtime.
 - NFKC is not the default; compatibility normalization can collapse distinctions that matter in some technical, mathematical, or linguistic contexts.
 - The runtime must not silently switch normalization behavior when the JDK, Android release, ICU version, or host platform changes.
 
@@ -75,22 +75,23 @@ Requirements:
 - A tokenizer must not rely on whichever Unicode tables happen to ship with the current JDK or Android release.
 - The pre-tokenizer name alone is insufficient; its version and complete configuration are part of the snapshot.
 
-The first byte-level BPE experiments should include both a no-split/raw-stream baseline and any proposed regex or Unicode-aware pre-tokenizer. The project must measure the effect rather than assume that one convention is universal.
+The initial byte-level BPE profile uses a no-split/raw-stream input. Any later regex or Unicode-aware pre-tokenizer is a separate versioned profile and must be evaluated against this baseline. The project must measure the effect rather than assume that one convention is universal.
 
 UAX #29 defines default grapheme, word, and sentence boundary guidance; it does not dictate one universal model-tokenizer pre-tokenization policy. Any UAX #29-based implementation must pin the applicable Unicode version and any tailoring.
 
 ## 5. Special tokens
 
-Special-token handling must be explicit and safe for untrusted input.
+Special-token handling must be explicit and safe for untrusted input. The initial profile reserves 32 special-token IDs in the range [0, 32); byte IDs begin at 32 and learned BPE IDs begin at 288.
 
 - Each special token has a stable ID, exact spelling or byte representation, semantic type, and active/reserved state.
 - Control tokens and user-defined literal tokens are distinct categories.
 - Raw text must not be converted into control IDs merely because a substring resembles a control-token spelling.
-- The default text-encoding policy must not implicitly recognize control tokens from arbitrary user text.
-- A caller may explicitly request matching of registered special tokens under a snapshot-defined matching policy.
-- Special-token insertion by an application is a separate, typed operation.
-- Adding, removing, activating, or reassigning a special token creates a new snapshot and fingerprint.
-- Unknown or inactive reserved IDs must not be treated as ordinary text tokens.
+- encodeText and encodeBytes never recognize special-token spellings. Such text is ordinary byte content.
+- The initial profile has no automatic special-token matching mode.
+- Special-token insertion by an application is a separate, typed operation that names an assigned special-token ID/name.
+- Adding a token to a previously unassigned reserved slot creates a new snapshot and fingerprint. Existing assignments are immutable and reserved slots are never recycled within a lineage.
+- Decoding renders a special token using its stored UTF-8 render bytes by default; skipping special tokens is an explicit option.
+- Unknown or unassigned reserved IDs must not be treated as ordinary text tokens.
 
 This prevents ordinary user content containing strings such as role markers from being silently promoted into system/control instructions.
 
@@ -105,7 +106,7 @@ For a fixed snapshot and fixed options, encoding must be deterministic and side-
 - The same input and options must produce the same ordered token IDs across all supported implementations.
 - Any stochastic segmentation mode must be a separate explicit API with an explicit seed and must not be used by deterministic encode calls.
 
-For BPE, the runtime applies the serialized ordered merge ranks. It does not recompute corpus frequencies during inference. The merge implementation must resolve overlapping candidates according to the algorithm's specified rank/order semantics.
+For the initial byte-level BPE profile, the runtime stores unique learned byte pieces in increasing rank order. For each adjacent pair, the concatenated bytes are looked up in the piece-to-ID table; the lowest-ID candidate is merged first, with the leftmost occurrence winning equal-rank ties. Inference never recomputes corpus frequencies. This rank-based behavior is specified in ADR 0003.
 
 For Unigram, the snapshot carries the scores and inference contract. Deterministic best-path decoding must define stable tie-breaking. Sampling is an explicit separate mode.
 
@@ -117,6 +118,7 @@ For Unigram, the snapshot carries the scores and inference contract. Determinist
 - Decoder cleanup, whitespace rewriting, punctuation rewriting, and special-token removal are never implicit.
 - Skipping special tokens is an explicit decode option and its behavior is tested.
 - Decoding a sequence produced by another snapshot is not assumed to be valid merely because the integer IDs are in range. The consumer must check the expected fingerprint.
+- The default decoder concatenates byte fragments and special-token render bytes. Text decoding validates the complete concatenated sequence as strict UTF-8.
 
 ## 8. Truncation, padding, and offsets
 
@@ -124,7 +126,7 @@ Truncation and padding are model-input preparation operations, not hidden behavi
 
 If offsets are implemented:
 
-- The canonical offset unit is UTF-8 bytes in the normalized input stream.
+- The canonical offset unit is UTF-8 bytes in the input stream (the initial profile has no normalizer).
 - Start offsets are inclusive and end offsets exclusive.
 - Every offset must refer to the exact source representation defined by the API.
 - If a token spans multiple source fragments or special-token insertion, offset provenance must be represented explicitly.
@@ -178,6 +180,8 @@ The testkit should eventually provide shared golden vectors covering:
 
 ## References
 
+- [ADR 0003: Initial byte-level BPE runtime profile and snapshot identity](adr/0003-initial-runtime-profile.md)
+- [tiktoken byte-pair merge implementation](https://github.com/openai/tiktoken/blob/main/src/lib.rs)
 - [Unicode Normalization Forms, UAX #15](https://www.unicode.org/reports/tr15/)
 - [Unicode Text Segmentation, UAX #29](https://www.unicode.org/reports/tr29/)
 - [SentencePiece paper](https://arxiv.org/abs/1808.06226)

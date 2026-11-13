@@ -17,9 +17,9 @@ A standalone Kotlin/JVM tokenizer library designed for local, deterministic, and
 
 | Module | Responsibility |
 | --- | --- |
-| `tokenizer-core` | Runtime encoding/decoding, vocabulary snapshots, special tokens, normalization contracts, and tokenizer identity. |
-| `tokenizer-training` | Corpus processing and controlled vocabulary/model training workflows. |
-| `tokenizer-testkit` | Shared test fixtures, compatibility vectors, and contract-test utilities. |
+| \`tokenizer-core\` | Runtime encoding/decoding, vocabulary snapshots, special tokens, normalization contracts, and tokenizer identity. |
+| \`tokenizer-training\` | Corpus processing and controlled vocabulary/model training workflows. |
+| \`tokenizer-testkit\` | Shared test fixtures, compatibility vectors, and contract-test utilities. |
 
 Algorithms and public interfaces are not frozen. BPE, unigram, byte fallback, normalization, and pre-tokenization strategies will be evaluated before becoming compatibility commitments.
 
@@ -41,16 +41,16 @@ Algorithms and public interfaces are not frozen. BPE, unigram, byte fallback, no
 
 Generate the Gradle wrapper and build:
 
-```bash
+\`\`\`bash
 gradle wrapper --gradle-version 9.7.0
 ./gradlew clean build
-```
+\`\`\`
 
 ## Dependency coordinates
 
 No artifacts have been published. Maven coordinates and the first release version will be announced after the API, serialization format, compatibility tests, and publication metadata are ready.
 
-The intended group ID is `io.github.zegamingx`; it remains provisional until namespace verification with the publishing service.
+The intended group ID is \`io.github.zegamingx\`; it remains provisional until namespace verification with the publishing service.
 
 ## Documentation
 
@@ -63,7 +63,9 @@ The intended group ID is `io.github.zegamingx`; it remains provisional until nam
 
 ## License
 
-**No license has been selected or granted yet.** Public visibility on GitHub does not by itself grant permission to use, modify, or redistribute this project. A license will be added after the maintainer confirms the intended terms.
+This project is licensed under the [Apache License, Version 2.0](LICENSE) (\`Apache-2.0\`).
+
+When redistributing this project or derivative works, include a copy of the license. Modified files must carry prominent notices stating that they were changed, and applicable copyright, patent, trademark, and attribution notices must be retained. If a \`NOTICE\` file is included in a distribution, its applicable attribution notices must also be preserved as required by the license.
 
 ## Scope boundary
 

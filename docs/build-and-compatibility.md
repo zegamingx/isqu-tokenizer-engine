@@ -1,6 +1,6 @@
 # Build and Ecosystem Compatibility
 
-- **Status:** Modernized baseline; CI-validated
+- **Status:** Modernized baseline; JVM tests passed, Android fixture awaiting rerun
 - **Last reviewed:** 2026-11-13
 - **Scope:** build JDK, Kotlin compiler, production JVM artifact, test runtime, JVM consumers, Android API 33 packaging
 
@@ -28,7 +28,7 @@ A modern build JDK does not require production bytecode to target that same JDK.
 | Test bytecode target | Java 25 | Tests use modern JDK APIs independently of published artifacts |
 | Test framework | JUnit 6.1.3 | Current GA JUnit line at review time; requires Java 17+ at runtime |
 | JVM consumer fixture | Java 21 / Kotlin 2.4.21 | Validates consumption from a modern LTS JVM target |
-| Android consumer fixture | AGP 9.4.0, compileSdk 37, minSdk 33 | Validates API 33 dependency resolution and D8/R8 packaging |
+| Android consumer fixture | AGP 9.4.0, compileSdk 36, minSdk 33 | Validates API 33 dependency resolution and D8/R8 packaging |
 
 JDK 27 is a newer feature release, but it is not an LTS release. JDK 25 is the current LTS release and is the more appropriate baseline for reproducible long-lived CI. The next planned LTS is Java 29 in September 2027.
 
@@ -102,8 +102,8 @@ The fixture at `compatibility/android-consumer` uses:
 - Android Gradle Plugin 9.4.0.
 - Gradle Wrapper 9.9.1.
 - JDK 25 to run Gradle.
-- compileSdk 37.
-- minSdk 33 and targetSdk 37.
+- compileSdk 36.
+- minSdk 33 and targetSdk 36.
 - Java source/target 11.
 - The published Maven-local core and training artifacts.
 - Testkit in the Android unit-test dependency scope only.

@@ -12,7 +12,7 @@ private const val MAX_CBOR_MAP_ENTRIES = 10
 private const val MAX_SPECIAL_TOKEN_CAPACITY = 32
 
 internal sealed class CborValue {
-    data class UInt(val value: Long) : CborValue()
+    data class UInt(val value: ULong) : CborValue()
     data class Text(val value: String) : CborValue()
     data class Bytes(val value: ByteSlice) : CborValue()
     data class Array(val items: List<CborValue>) : CborValue()
@@ -58,16 +58,16 @@ internal object DeterministicCborWriter {
             is CborValue.UInt -> writeUnsigned(0, value.value, output)
             is CborValue.Text -> {
                 val bytes = encodeUtf8(value.value)
-                writeUnsigned(3, bytes.size.toLong(), output)
+                writeUnsigned(3, bytes.size.toULong(), output)
                 output.write(bytes)
             }
             is CborValue.Bytes -> {
                 val bytes = value.value.copyToByteArray()
-                writeUnsigned(2, bytes.size.toLong(), output)
+                writeUnsigned(2, bytes.size.toULong(), output)
                 output.write(bytes)
             }
             is CborValue.Array -> {
-                writeUnsigned(4, value.items.size.toLong(), output)
+                writeUnsigned(4, value.items.size.toULong(), output)
                 value.items.forEach { writeValue(it, output) }
             }
             is CborValue.Map -> {
@@ -76,7 +76,7 @@ internal object DeterministicCborWriter {
                 }.sortedWith { first, second ->
                     compareUnsigned(first.keyBytes, second.keyBytes)
                 }
-                writeUnsigned(5, encodedEntries.size.toLong(), output)
+                writeUnsigned(5, encodedEntries.size.toULong(), output)
                 for (entry in encodedEntries) {
                     output.write(entry.keyBytes)
                     writeValue(entry.value, output)
@@ -87,24 +87,21 @@ internal object DeterministicCborWriter {
 
     private fun writeUnsigned(
         majorType: Int,
-        value: Long,
+        value: ULong,
         output: ByteArrayOutputStream,
     ) {
-        if (value < 0L) {
-            throw TokenizerFormatException("CBOR version-1 integers must be unsigned")
-        }
         when {
-            value < 24L -> output.write((majorType shl 5) or value.toInt())
-            value <= 0xffL -> {
+            value < 24uL -> output.write((majorType shl 5) or value.toInt())
+            value <= 0xffuL -> {
                 output.write((majorType shl 5) or 24)
                 output.write(value.toInt())
             }
-            value <= 0xffffL -> {
+            value <= 0xffffuL -> {
                 output.write((majorType shl 5) or 25)
                 output.write((value ushr 8).toInt())
                 output.write(value.toInt())
             }
-            value <= 0xffff_ffffL -> {
+            value <= 0xffff_ffffuL -> {
                 output.write((majorType shl 5) or 26)
                 for (shift in 24 downTo 0 step 8) {
                     output.write((value ushr shift).toInt())
@@ -166,7 +163,10 @@ internal class DeterministicCborReader(
         return value
     }
 
-    private fun readValue(depth: Int): CborValue {
+    private fun readValue(
+        depth: Int,
+        maxArrayLength: Int = 0,
+    ): CborValue {
         if (depth > MAX_CBOR_CONTAINER_DEPTH) {
             throw TokenizerFormatException("CBOR container nesting exceeds depth four")
         }
@@ -201,10 +201,6 @@ internal class DeterministicCborReader(
             }
             4 -> {
                 val length = boundedLength(argument, "array")
-                val maxArrayLength = maxOf(
-                    MAX_SPECIAL_TOKEN_CAPACITY,
-                    limits.maxMergeablePieceCount,
-                )
                 if (length > maxArrayLength || length > data.size - offset) {
                     throw TokenizerResourceLimitException("CBOR array exceeds configured bounds")
                 }
@@ -223,7 +219,7 @@ internal class DeterministicCborReader(
         }
     }
 
-    private fun readMap(argument: Long, depth: Int): CborValue.Map {
+    private fun readMap(argument: ULong, depth: Int): CborValue.Map {
         val length = boundedLength(argument, "map")
         if (length > MAX_CBOR_MAP_ENTRIES || length > (data.size - offset) / 2) {
             throw TokenizerFormatException("CBOR map exceeds the version-1 schema bounds")
@@ -252,46 +248,46 @@ internal class DeterministicCborReader(
             if (!seen.add(key.value)) {
                 throw TokenizerFormatException("Duplicate CBOR map key: ${key.value}")
             }
-            entries.add(key.value to readValue(depth + 1))
+            val childArrayLimit = when (key.value) {
+                "specialTokens" -> MAX_SPECIAL_TOKEN_CAPACITY
+                "mergeablePieces" -> limits.maxMergeablePieceCount
+                else -> 0
+            }
+            entries.add(key.value to readValue(depth + 1, childArrayLimit))
         }
 
         return CborValue.Map(entries, start, offset)
     }
 
-    private fun readArgument(additionalInfo: Int): Long {
+    private fun readArgument(additionalInfo: Int): ULong {
         return when (additionalInfo) {
-            in 0..23 -> additionalInfo.toLong()
+            in 0..23 -> additionalInfo.toULong()
             24 -> {
-                val value = readByte().toLong()
-                if (value < 24L) {
+                val value = readByte().toULong()
+                if (value < 24uL) {
                     throw TokenizerFormatException("CBOR integer or length is not shortest-form encoded")
                 }
                 value
             }
             25 -> {
-                val value = (readByte().toLong() shl 8) or readByte().toLong()
-                if (value <= 0xffL) {
+                val value = (readByte().toULong() shl 8) or readByte().toULong()
+                if (value <= 0xffuL) {
                     throw TokenizerFormatException("CBOR integer or length is not shortest-form encoded")
                 }
                 value
             }
             26 -> {
-                var value = 0L
-                repeat(4) { value = (value shl 8) or readByte().toLong() }
-                if (value <= 0xffffL) {
+                var value = 0uL
+                repeat(4) { value = (value shl 8) or readByte().toULong() }
+                if (value <= 0xffffuL) {
                     throw TokenizerFormatException("CBOR integer or length is not shortest-form encoded")
                 }
                 value
             }
             27 -> {
-                if ((peekByte() and 0x80) != 0) {
-                    throw TokenizerFormatException(
-                        "CBOR unsigned integer exceeds the supported signed-Long range",
-                    )
-                }
-                var value = 0L
-                repeat(8) { value = (value shl 8) or readByte().toLong() }
-                if (value <= 0xffff_ffffL) {
+                var value = 0uL
+                repeat(8) { value = (value shl 8) or readByte().toULong() }
+                if (value <= 0xffff_ffffuL) {
                     throw TokenizerFormatException("CBOR integer or length is not shortest-form encoded")
                 }
                 value
@@ -301,17 +297,8 @@ internal class DeterministicCborReader(
         }
     }
 
-    private fun ensureProvenanceBudget(endOffset: Int) {
-        val start = provenanceBudgetStart ?: return
-        if (endOffset - start > limits.maxProvenanceBytes) {
-            throw TokenizerResourceLimitException(
-                "Provenance exceeds maxProvenanceBytes ${limits.maxProvenanceBytes}",
-            )
-        }
-    }
-
-    private fun boundedLength(value: Long, location: String): Int {
-        if (value > Int.MAX_VALUE.toLong()) {
+    private fun boundedLength(value: ULong, location: String): Int {
+        if (value > Int.MAX_VALUE.toULong()) {
             throw TokenizerFormatException("CBOR $location length exceeds Int.MAX_VALUE")
         }
         return value.toInt()
@@ -324,25 +311,18 @@ internal class DeterministicCborReader(
         return data[offset++].toInt() and 0xff
     }
 
-    private fun peekByte(): Int {
-        if (offset >= data.size) {
-            throw TokenizerFormatException("Unexpected end of CBOR input")
-        }
-        return data[offset].toInt() and 0xff
-    }
-
     private fun ensureRemaining(length: Int) {
         if (length > data.size - offset) {
             throw TokenizerFormatException("CBOR item length exceeds remaining input")
         }
     }
 
-    private fun headerLengthForArgument(argument: Long): Int {
+    private fun headerLengthForArgument(argument: ULong): Int {
         return when {
-            argument < 24L -> 1
-            argument <= 0xffL -> 2
-            argument <= 0xffffL -> 3
-            argument <= 0xffff_ffffL -> 5
+            argument < 24uL -> 1
+            argument <= 0xffuL -> 2
+            argument <= 0xffffuL -> 3
+            argument <= 0xffff_ffffuL -> 5
             else -> 9
         }
     }

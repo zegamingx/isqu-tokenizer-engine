@@ -1,5 +1,6 @@
 package io.github.zegamingx.isqu.tokenizer.format.cbor
 
+import io.github.zegamingx.isqu.tokenizer.core.ByteLevelBpeTokenizer
 import io.github.zegamingx.isqu.tokenizer.core.ByteString
 import io.github.zegamingx.isqu.tokenizer.core.SpecialToken
 import io.github.zegamingx.isqu.tokenizer.core.TokenizerSnapshot
@@ -25,7 +26,7 @@ class TokenizerSnapshotCodecTest {
         return TokenizerSnapshot(
             specialTokens = listOf(
                 SpecialToken(0, "bos", ByteString.fromUtf8("<BOS>")),
-                SpecialToken(2, "eos", ByteString.fromUtf8("<EOS>")),
+                SpecialToken(1, "eos", ByteString.fromUtf8("<EOS>")),
             ),
             mergeablePieces = listOf(
                 ByteString.fromUtf8("he"),
@@ -44,6 +45,10 @@ class TokenizerSnapshotCodecTest {
         assertEquals(snapshot.mergeablePieces, loaded.snapshot.mergeablePieces)
         assertEquals(TokenizerSnapshotFingerprint.compute(snapshot), loaded.runtimeFingerprint)
         assertArrayEquals(encoded, TokenizerSnapshotCodec.encode(loaded.snapshot))
+        assertArrayEquals(
+            ByteLevelBpeTokenizer(snapshot).encodeText("hello"),
+            ByteLevelBpeTokenizer(loaded.snapshot).encodeText("hello"),
+        )
     }
 
     @Test
@@ -72,7 +77,7 @@ class TokenizerSnapshotCodecTest {
         val fingerprint = TokenizerSnapshotFingerprint.compute(snapshot)
         val firstProvenance = TokenizerProvenance(
             lineageRootFingerprint = fingerprint,
-            snapshotSequence = 0,
+            snapshotSequence = 0uL,
             trainerName = "isqu-test-trainer",
             trainerVersion = "0.1",
         )
@@ -110,6 +115,36 @@ class TokenizerSnapshotCodecTest {
     }
 
     @Test
+    fun loaderEnforcesIndividualAndCumulativePieceByteLimits() {
+        val encoded = TokenizerSnapshotCodec.encode(snapshot())
+
+        assertThrows(TokenizerResourceLimitException::class.java) {
+            TokenizerSnapshotCodec.decode(
+                encoded,
+                limits.copy(maxIndividualPieceBytes = 2),
+            )
+        }
+        assertThrows(TokenizerResourceLimitException::class.java) {
+            TokenizerSnapshotCodec.decode(
+                encoded,
+                limits.copy(maxCumulativeLearnedPieceBytes = 4L),
+            )
+        }
+    }
+
+    @Test
+    fun loaderEnforcesSpecialTokenRenderByteLimit() {
+        val encoded = TokenizerSnapshotCodec.encode(snapshot())
+
+        assertThrows(TokenizerResourceLimitException::class.java) {
+            TokenizerSnapshotCodec.decode(
+                encoded,
+                limits.copy(maxSpecialTokenRenderBytes = 4),
+            )
+        }
+    }
+
+    @Test
     fun loaderEnforcesMergeablePieceCount() {
         val encoded = TokenizerSnapshotCodec.encode(snapshot())
         val strictLimits = limits.copy(maxMergeablePieceCount = 1)
@@ -131,6 +166,21 @@ class TokenizerSnapshotCodecTest {
     }
 
     @Test
+    fun unsupportedFormatVersionIsRejectedExplicitly() {
+        val encoded = TokenizerSnapshotCodec.encode(snapshot())
+        val versionKey = "formatVersion".toByteArray(Charsets.UTF_8)
+        val valueOffset = encoded.indexOfSequence(versionKey) + 1 + versionKey.size
+        check(valueOffset > versionKey.size)
+        check(encoded[valueOffset].toInt() == 1)
+        encoded[valueOffset] = 2
+
+        val exception = assertThrows(UnsupportedTokenizerFormatVersionException::class.java) {
+            TokenizerSnapshotCodec.decode(encoded, limits)
+        }
+        assertEquals(2uL, exception.version)
+    }
+
+    @Test
     fun truncatedAndTrailingInputAreRejected() {
         val encoded = TokenizerSnapshotCodec.encode(snapshot())
 
@@ -143,14 +193,54 @@ class TokenizerSnapshotCodecTest {
     }
 
     @Test
+    fun unsignedProvenanceRetainsTheFullCborUInt64Range() {
+        val snapshot = snapshot()
+        val fingerprint = TokenizerSnapshotFingerprint.compute(snapshot)
+        val provenance = TokenizerProvenance(
+            lineageRootFingerprint = fingerprint,
+            snapshotSequence = ULong.MAX_VALUE,
+            parentRuntimeFingerprint = fingerprint,
+            seed = ULong.MAX_VALUE,
+        )
+
+        val loaded = TokenizerSnapshotCodec.decode(
+            TokenizerSnapshotCodec.encode(snapshot, provenance),
+            limits,
+        )
+
+        assertEquals(ULong.MAX_VALUE, loaded.provenance?.snapshotSequence)
+        assertEquals(ULong.MAX_VALUE, loaded.provenance?.seed)
+    }
+
+    @Test
     fun invalidRootProvenanceIsRejected() {
         val invalid = TokenizerProvenance(
             lineageRootFingerprint = ByteString.of(ByteArray(32)),
-            snapshotSequence = 0,
+            snapshotSequence = 0uL,
         )
 
         assertThrows(TokenizerFormatException::class.java) {
             TokenizerSnapshotCodec.encode(snapshot(), invalid)
         }
     }
+}
+
+
+private fun ByteArray.indexOfSequence(sequence: ByteArray): Int {
+    if (sequence.isEmpty() || sequence.size > size) {
+        return -1
+    }
+    for (start in 0..(size - sequence.size)) {
+        var matches = true
+        for (index in sequence.indices) {
+            if (this[start + index] != sequence[index]) {
+                matches = false
+                break
+            }
+        }
+        if (matches) {
+            return start
+        }
+    }
+    return -1
 }

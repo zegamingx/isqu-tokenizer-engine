@@ -44,21 +44,20 @@ data class TokenizerLoadLimits(
  */
 data class TokenizerProvenance(
     val lineageRootFingerprint: ByteString,
-    val snapshotSequence: Long,
+    val snapshotSequence: ULong,
     val parentRuntimeFingerprint: ByteString? = null,
     val trainerName: String? = null,
     val trainerVersion: String? = null,
     val trainerRevision: String? = null,
     val trainingConfigSha256: ByteString? = null,
     val corpusManifestSha256: ByteString? = null,
-    val seed: Long? = null,
+    val seed: ULong? = null,
     val createdAt: String? = null,
 ) {
     init {
         require(lineageRootFingerprint.size == FINGERPRINT_BYTES) {
             "lineageRootFingerprint must contain exactly 32 bytes"
         }
-        require(snapshotSequence >= 0L) { "snapshotSequence must not be negative" }
         require(parentRuntimeFingerprint == null || parentRuntimeFingerprint.size == FINGERPRINT_BYTES) {
             "parentRuntimeFingerprint must contain exactly 32 bytes"
         }
@@ -68,7 +67,6 @@ data class TokenizerProvenance(
         require(corpusManifestSha256 == null || corpusManifestSha256.size == FINGERPRINT_BYTES) {
             "corpusManifestSha256 must contain exactly 32 bytes"
         }
-        require(seed == null || seed >= 0L) { "seed must not be negative" }
         require(trainerName == null || trainerName.isNotEmpty()) {
             "trainerName must not be empty when supplied"
         }
@@ -81,7 +79,7 @@ data class TokenizerProvenance(
         require(createdAt == null || isRfc3339Timestamp(createdAt)) {
             "createdAt must be an RFC 3339 timestamp with an explicit offset"
         }
-        if (snapshotSequence == 0L) {
+        if (snapshotSequence == 0uL) {
             require(parentRuntimeFingerprint == null) {
                 "A root snapshot must not have a parent fingerprint"
             }
@@ -117,7 +115,7 @@ open class TokenizerFormatException(
     cause: Throwable? = null,
 ) : IllegalArgumentException(message, cause)
 
-class UnsupportedTokenizerFormatVersionException(val version: Long) :
+class UnsupportedTokenizerFormatVersionException(val version: ULong) :
     TokenizerFormatException("Unsupported ISQU tokenizer format version: $version")
 
 class TokenizerResourceLimitException(message: String) :
@@ -131,7 +129,7 @@ class TokenizerFingerprintMismatchException :
  */
 object TokenizerSnapshotCodec {
     const val FORMAT_IDENTIFIER: String = "isqu-tokenizer"
-    const val FORMAT_VERSION: Long = 1L
+    const val FORMAT_VERSION: ULong = 1uL
     private const val FINGERPRINT_BYTES = 32
 
     fun save(
@@ -270,7 +268,7 @@ object TokenizerSnapshotCodec {
         val specialTokens = snapshot.specialTokens.map { special ->
             CborValue.Map(
                 listOf(
-                    "id" to CborValue.UInt(special.id.toLong()),
+                    "id" to CborValue.UInt(special.id.toULong()),
                     "name" to CborValue.Text(special.name),
                     "renderBytes" to CborValue.Bytes(
                         ByteSlice.owned(special.renderBytes.toByteArray()),
@@ -287,18 +285,18 @@ object TokenizerSnapshotCodec {
                 "algorithm" to CborValue.Map(
                     listOf(
                         "name" to CborValue.Text("byte-level-bpe-rank"),
-                        "version" to CborValue.UInt(1L),
+                        "version" to CborValue.UInt(1uL),
                     ),
                 ),
                 "idLayout" to CborValue.Map(
                     listOf(
                         "scheme" to CborValue.Text(TokenizerSnapshot.ID_LAYOUT_SCHEME),
                         "tokenIdType" to CborValue.Text("non-negative-int32"),
-                        "specialTokenBase" to CborValue.UInt(0L),
-                        "specialTokenCapacity" to CborValue.UInt(32L),
-                        "byteTokenBase" to CborValue.UInt(32L),
-                        "byteTokenCount" to CborValue.UInt(256L),
-                        "mergeTokenBase" to CborValue.UInt(288L),
+                        "specialTokenBase" to CborValue.UInt(0uL),
+                        "specialTokenCapacity" to CborValue.UInt(32uL),
+                        "byteTokenBase" to CborValue.UInt(32uL),
+                        "byteTokenCount" to CborValue.UInt(256uL),
+                        "mergeTokenBase" to CborValue.UInt(288uL),
                     ),
                 ),
                 "specialTokens" to CborValue.Array(specialTokens),
@@ -348,7 +346,7 @@ object TokenizerSnapshotCodec {
         if (algorithm.required("name").asText("algorithm.name") != "byte-level-bpe-rank") {
             throw TokenizerFormatException("Unsupported tokenizer algorithm")
         }
-        if (algorithm.required("version").asUInt("algorithm.version") != 1L) {
+        if (algorithm.required("version").asUInt("algorithm.version") != 1uL) {
             throw TokenizerFormatException("Unsupported byte-level BPE algorithm version")
         }
 
@@ -372,7 +370,7 @@ object TokenizerSnapshotCodec {
                 location = "special-token entry",
             )
             val idLong = specialMap.required("id").asUInt("special-token id")
-            if (idLong > Int.MAX_VALUE.toLong()) {
+            if (idLong > Int.MAX_VALUE.toULong()) {
                 throw TokenizerFormatException("Special-token ID exceeds Int.MAX_VALUE")
             }
             val id = idLong.toInt()
@@ -452,11 +450,11 @@ object TokenizerSnapshotCodec {
         val expected = mapOf(
             "scheme" to CborValue.Text(TokenizerSnapshot.ID_LAYOUT_SCHEME),
             "tokenIdType" to CborValue.Text("non-negative-int32"),
-            "specialTokenBase" to CborValue.UInt(0L),
-            "specialTokenCapacity" to CborValue.UInt(32L),
-            "byteTokenBase" to CborValue.UInt(32L),
-            "byteTokenCount" to CborValue.UInt(256L),
-            "mergeTokenBase" to CborValue.UInt(288L),
+            "specialTokenBase" to CborValue.UInt(0uL),
+            "specialTokenCapacity" to CborValue.UInt(32uL),
+            "byteTokenBase" to CborValue.UInt(32uL),
+            "byteTokenCount" to CborValue.UInt(256uL),
+            "mergeTokenBase" to CborValue.UInt(288uL),
         )
         for ((key, expectedValue) in expected) {
             if (layout.required(key) != expectedValue) {
@@ -578,7 +576,7 @@ object TokenizerSnapshotCodec {
             return
         }
         if (
-            provenance.snapshotSequence == 0L &&
+            provenance.snapshotSequence == 0uL &&
             !MessageDigest.isEqual(
                 provenance.lineageRootFingerprint.toByteArray(),
                 runtimeFingerprint,
@@ -607,7 +605,7 @@ object TokenizerSnapshotCodec {
             ?: throw TokenizerFormatException("$location must be a CBOR text string")
     }
 
-    private fun CborValue.asUInt(location: String): Long {
+    private fun CborValue.asUInt(location: String): ULong {
         return (this as? CborValue.UInt)?.value
             ?: throw TokenizerFormatException("$location must be a CBOR unsigned integer")
     }

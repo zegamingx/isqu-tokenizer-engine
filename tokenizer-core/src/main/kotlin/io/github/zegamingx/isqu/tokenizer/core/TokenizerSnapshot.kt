@@ -55,6 +55,9 @@ class TokenizerSnapshot(
     private val specialTokensByName: Map<String, SpecialToken>
 
     init {
+        require(specialTokens.size <= RESERVED_SPECIAL_TOKEN_CAPACITY) {
+            "At most 32 special tokens can be assigned in isqu-byte-bpe-v1"
+        }
         require(mergeablePieces.size <= Int.MAX_VALUE - BASE_ID_SPACE) {
             "Learned-piece count exceeds the non-negative Int token-ID space"
         }
@@ -65,6 +68,11 @@ class TokenizerSnapshot(
         }
         require(sortedSpecialTokens.map(SpecialToken::id).toSet().size == sortedSpecialTokens.size) {
             "Special-token IDs must be unique"
+        }
+        sortedSpecialTokens.forEachIndexed { index, specialToken ->
+            require(specialToken.id == index) {
+                "Special-token ID ${specialToken.id} must fill the lowest unassigned reserved slot $index"
+            }
         }
         require(sortedSpecialTokens.map(SpecialToken::name).toSet().size == sortedSpecialTokens.size) {
             "Special-token names must be unique"

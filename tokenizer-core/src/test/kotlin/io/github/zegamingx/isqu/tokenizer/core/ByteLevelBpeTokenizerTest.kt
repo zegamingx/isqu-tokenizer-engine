@@ -148,10 +148,21 @@ class ByteLevelBpeTokenizerTest {
     }
 
     @Test
+    fun specialTokenIdsCannotSkipTheLowestUnassignedSlot() {
+        assertThrows(IllegalArgumentException::class.java) {
+            TokenizerSnapshot(
+                specialTokens = listOf(
+                    SpecialToken(1, "eos", ByteString.fromUtf8("<EOS>")),
+                ),
+            )
+        }
+    }
+
+    @Test
     fun tokenIdSpaceAndActiveTokenCountRemainDistinct() {
         val snapshot = TokenizerSnapshot(
             specialTokens = listOf(
-                SpecialToken(2, "eos", ByteString.fromUtf8("<EOS>")),
+                SpecialToken(0, "eos", ByteString.fromUtf8("<EOS>")),
             ),
             mergeablePieces = listOf(ByteString.fromUtf8("ab")),
         )

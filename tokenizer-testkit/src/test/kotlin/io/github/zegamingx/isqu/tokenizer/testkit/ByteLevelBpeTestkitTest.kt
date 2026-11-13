@@ -68,6 +68,25 @@ class ByteLevelBpeTestkitTest {
     }
 
     @Test
+    fun appendingSpecialTokenUsesNextFreeIdWithoutRebindingOldIds() {
+        val bos = io.github.zegamingx.isqu.tokenizer.core.SpecialToken(
+            0,
+            "bos",
+            ByteString.fromUtf8("<BOS>"),
+        )
+        val eos = io.github.zegamingx.isqu.tokenizer.core.SpecialToken(
+            1,
+            "eos",
+            ByteString.fromUtf8("<EOS>"),
+        )
+        val previous = TokenizerSnapshot(specialTokens = listOf(bos))
+        val extended = TokenizerSnapshot(specialTokens = listOf(bos, eos))
+
+        TokenizerTestkit.assertExistingTokenIdsPreserved(previous, extended)
+        TokenizerTestkit.assertRuntimeFingerprintChangesOnExtension(previous, extended)
+    }
+
+    @Test
     fun rawArbitraryBytesAlwaysRoundTrip() {
         val tokenizer = ByteLevelBpeTokenizer(ByteLevelBpeTestVectors.snapshot)
         val input = byteArrayOf(

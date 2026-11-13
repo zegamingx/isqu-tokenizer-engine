@@ -19,8 +19,8 @@ The repository is ready for a deliberately narrow internal prototype after the P
 | Serialization and fingerprint | **BLOCKED FOR FORMAT FREEZE** | CBOR is a proposal; the exact canonical schema and digest input encoding are incomplete. |
 | Algorithm selection | **CONDITIONAL** | Byte-level BPE is the lead prototype candidate; Unigram remains a required comparator. |
 | Corpus admission | **BLOCKED FOR REFERENCE TRAINING** | No exact source manifest has received final approval for the intended training and artifact-distribution use. |
-| JVM consumer compatibility | **PENDING MODERN FIXTURE CI** | The previous Java 11 consumer passed; a Java 21/Kotlin 2.4.21 consumer is now configured but its task was not reached in the first Android-provisioning failure. |
-| Android API 33 packaging | **PENDING CI RERUN** | Android consumer fixture uses minSdk 33 and SDK 36; the task verifies production artifacts and testImplementation isolation before D8/R8 packaging. Earlier attempts exposed SDK package and AGP unit-test classpath fixture errors, now corrected. |
+| JVM consumer compatibility | **PASS** | Java 21/Kotlin 2.4.21 consumer resolved Java 11 artifacts, checked production/testkit scopes and metadata, and compiled Java/Kotlin sources. |
+| Android API 33 packaging | **PASS WITH LIMITATION** | AGP 9.4.0 consumer with minSdk 33 passed artifact/scope checks and D8/R8 debug plus minified-release packaging using compileSdk 36. |
 | Android API 33 runtime | **NOT DEVICE-VALIDATED** | No API 33 emulator or physical-device execution has been performed yet. |
 | Behavioral test strategy | **DEFINED, NOT IMPLEMENTED** | Contract vectors and failure cases are listed, but no production code or tokenizer tests exist. |
 
@@ -30,7 +30,7 @@ The correct next step is a small, internal byte-level BPE vertical slice—not a
 
 The audit reviewed the README, changelog, architecture, tokenization contract, tokenizer format proposal, algorithm research, corpus provenance policy, ADR 0001, compatibility policy, build compatibility document, ADR index, Gradle module scripts, consumer fixture, version catalog, root build configuration, and CI workflow.
 
-The build result is correctly described as a build/publication/metadata compatibility result. The current modules have no production tokenizer source, no stable public API, and no algorithm-level tests. The consumer fixture therefore validates dependency resolution and language compilation, not calls into a tokenizer implementation.
+CI run #8 passed the modernized build, JUnit 6.1.3 test runtime, Maven-local publication, Java 21/Kotlin 2.4.21 consumer compilation, Android API 33 dependency/scope checks, and D8/R8 debug plus minified-release packaging. The modules still have no production tokenizer implementation, stable public API, or algorithm-level conformance suite. The Android fixture is a packaging test, not execution on an API 33 emulator or device.
 
 ## 3. Recommended module and package structure
 
@@ -171,7 +171,7 @@ A small source-cleared pilot is preferable to a large web crawl with unresolved 
 
 ## 6. Android and ecosystem compatibility gap
 
-Stage 6 proves the current JVM artifact metadata and compilation path for a Java 11/Kotlin consumer. It does not prove Android runtime compatibility.
+The modern compatibility baseline uses JDK 25, Kotlin Gradle Plugin 2.4.21, JUnit 6.1.3, Java 11 production bytecode/API, and Java 25 test runtime. Its Java 21/Kotlin consumer and Android API 33 D8/R8 packaging fixture pass CI. This does not prove tokenizer runtime behavior on an Android 13 device.
 
 Before advertising Android support, add a minimal Android consumer fixture that:
 
@@ -246,6 +246,6 @@ Do not block correctness implementation on expensive model-level BPB experiments
 
 **G7 audit: COMPLETE. Implementation readiness: CONDITIONAL.**
 
-The project can proceed with an internal, non-stable BPE runtime prototype after P0-1 through P0-5 are recorded as explicit decisions. A distributable reference vocabulary additionally requires P0-6. Android dependency and D8/R8 packaging validation now pass in CI; on-device API 33 runtime support remains unclaimed until emulator or physical-device conformance tests pass.
+The project can proceed with an internal, non-stable BPE runtime prototype after P0-1 through P0-5 are recorded as explicit decisions. A distributable reference vocabulary additionally requires P0-6. Android dependency and D8/R8 packaging validation pass; on-device API 33 runtime support remains unclaimed until emulator or physical-device conformance tests pass.
 
 No production implementation, stable public API, accepted format version, approved general-purpose corpus, Maven Central release, or Android compatibility claim is created by this audit.

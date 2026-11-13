@@ -2,12 +2,12 @@
 
 - **Status:** Audit completed; implementation readiness is conditional
 - **Review date:** 2026-11-13
-- **Reviewed baseline:** `main` at `9fe5f8d54cc1944d1adf7c5d37b683c2759da583`
+- **Reviewed baseline:** `main` immediately before the G8 decision commit
 - **Scope:** module boundaries, package layout, public API concepts, snapshot format, compatibility, test strategy, and implementation sequencing
 
 ## 1. Executive result
 
-The repository is ready for a deliberately narrow internal prototype after the P0 design gates in this document are resolved. It is **not** ready to freeze a stable public API, freeze the `.isqutok` wire format, publish a reference vocabulary, or claim Android runtime compatibility.
+The repository is ready for a deliberately narrow internal byte-level BPE prototype. ADR 0003 resolves P0-1 through P0-5 as an accepted pre-1.0 design profile. The public Kotlin API and released `.isqutok` compatibility guarantee remain unfrozen until implementations and conformance tests pass. The repository is not ready to publish a reference vocabulary or claim Android device-runtime compatibility.
 
 | Area | Result | Reason |
 | --- | --- | --- |
@@ -15,16 +15,16 @@ The repository is ready for a deliberately narrow internal prototype after the P
 | High-level module separation | **PASS WITH ACTION** | Core, training, and testkit responsibilities are distinct, but persistence adapter ownership is not yet represented by a module. |
 | Package structure | **PROPOSED** | No production packages or public declarations exist yet. |
 | Runtime API | **NOT FROZEN** | The tokenization contract is behavioral guidance; its method names are illustrative. |
-| Snapshot model and ID layout | **BLOCKED FOR FORMAT FREEZE** | Reserved special-token capacity, ID-space semantics, and exact schema types remain open. |
-| Serialization and fingerprint | **BLOCKED FOR FORMAT FREEZE** | CBOR is a proposal; the exact canonical schema and digest input encoding are incomplete. |
-| Algorithm selection | **CONDITIONAL** | Byte-level BPE is the lead prototype candidate; Unigram remains a required comparator. |
+| Snapshot model and ID layout | **PASS — DESIGN ACCEPTED** | ADR 0003 fixes the 32-slot special range, 256-byte base, ranked-piece range, ID-space definitions, and Int32 token IDs. |
+| Serialization and fingerprint | **PASS — DESIGN ACCEPTED / NOT IMPLEMENTED** | Version-1 deterministic CBOR schema and exact SHA-256 input are defined; codec/golden-vector validation remains open. |
+| Initial algorithm profile | **PASS — INTERNAL PROTOTYPE** | Ranked byte-level BPE with NONE normalizer/pre-tokenizer is accepted; Unigram remains a required comparator before a universal default claim. |
 | Corpus admission | **BLOCKED FOR REFERENCE TRAINING** | No exact source manifest has received final approval for the intended training and artifact-distribution use. |
 | JVM consumer compatibility | **PASS** | Java 21/Kotlin 2.4.21 consumer resolved Java 11 artifacts, checked production/testkit scopes and metadata, and compiled Java/Kotlin sources. |
 | Android API 33 packaging | **PASS WITH LIMITATION** | AGP 9.4.0 consumer with minSdk 33 passed artifact/scope checks and D8/R8 debug plus minified-release packaging using compileSdk 36. |
 | Android API 33 runtime | **NOT DEVICE-VALIDATED** | No API 33 emulator or physical-device execution has been performed yet. |
 | Behavioral test strategy | **DEFINED, NOT IMPLEMENTED** | Contract vectors and failure cases are listed, but no production code or tokenizer tests exist. |
 
-The correct next step is a small, internal byte-level BPE vertical slice—not a broad public API or a complete multi-algorithm framework.
+The correct next step is a small, internal byte-level BPE vertical slice—not a broad public API or a complete multi-algorithm framework. Do not publish the format or claim algorithm superiority from the design decision alone.
 
 ## 2. Evidence reviewed
 
@@ -118,11 +118,11 @@ Important API invariants:
 
 Do not freeze exact Kotlin signatures until Java interoperability, array ownership, fingerprint-carrying sequences, and error semantics have been reviewed together.
 
-## 5. P0 design gates before a format/API freeze
+## 5. P0 design gates and accepted decisions
 
-### P0-1 — Token ID layout
+### P0-1 — Token ID layout — RESOLVED BY ADR 0003
 
-Resolve the meaning of every ID range before writing a stable serializer:
+The initial layout is fixed as special IDs [0, 32), byte IDs [32, 288), and ranked learned pieces from 288 onward. idSpaceSize, activeTokenCount, reservedSpecialCapacity, and targetIdSpaceSize have explicit meanings. Token IDs are non-negative signed Int32 values. See ADR 0003 for the normative rules.
 
 - Whether reserved special-token capacity is fixed, configurable, or absent in the first format version.
 - Whether the illustrative `S = 32` is actually needed and what happens to unassigned slots.
@@ -132,19 +132,17 @@ Resolve the meaning of every ID range before writing a stable serializer:
 
 A model embedding table must be sized from the highest usable ID plus one, not from active token count when the ID space contains holes.
 
-### P0-2 — Normalization and pre-tokenization
+### P0-2 — Normalization and pre-tokenization — RESOLVED FOR THE INITIAL PROFILE
 
-Keep `NONE` as the lossless baseline. If NFC or another normalizer is later supported, its Unicode data and implementation version must be pinned in the snapshot. Do not delegate behavior to whatever Unicode data happens to ship with the host JDK or Android version.
+The initial profile fixes both the normalizer and pre-tokenizer to NONE. Text is validated as well-formed UTF-16 and encoded as UTF-8; raw-byte input remains arbitrary bytes. No host-JDK or Android Unicode property tables affect initial segmentation. Any later normalizer or pre-tokenizer requires a separately versioned profile and fingerprinted implementation/data version. A no-split baseline remains the control for any later comparison.
 
-The first BPE experiment must compare a raw/no-split byte stream with any proposed pre-tokenizer. Do not select a regex by convention alone. Its exact pattern, engine semantics, Unicode property tables, and version must be specified if adopted.
+### P0-3 — Special-token semantics — RESOLVED BY ADR 0003
 
-### P0-3 — Special-token semantics
+The first 32 IDs are reserved. Special tokens are added in unused slots and are append-only within a lineage. Ordinary text/byte encoding never recognizes token spellings; callers insert special IDs through a typed operation. Decoding renders stored bytes by default, with explicit skip behavior. Reserved unassigned IDs fail validation. Existing ID/name/render bytes cannot be changed or recycled.
 
-Keep literal text and control tokens separate. Define the typed insertion/matching path, collision behavior, case sensitivity, and treatment of inactive reserved IDs. Do not enable automatic control-token recognition in the default text path.
+### P0-4 — Snapshot schema and fingerprint — DESIGN RESOLVED; IMPLEMENTATION PENDING
 
-### P0-4 — Snapshot schema and fingerprint
-
-Before format version 1 is accepted, publish an exact field/type table, not only a diagnostic JSON example. Specify:
+ADR 0003 and tokenizer-format.md define the exact version-1 top-level/runtime fields, CBOR types, ID layout, closed-schema behavior, and fingerprint byte input. The version-1 fingerprint is SHA-256 over the core-deterministic CBOR projection {format, formatVersion, runtime}. Remaining release gates are codec implementation and independent byte-for-byte/cross-runtime tests. The schema specifies:
 
 - CBOR map key types and deterministic ordering requirements.
 - Required, optional, and unknown-field behavior for each schema version.
@@ -157,11 +155,9 @@ Before format version 1 is accepted, publish an exact field/type table, not only
 
 The runtime fingerprint is an identity/integrity check for tokenizer semantics, not a digital signature or proof of source rights.
 
-### P0-5 — Lineage and compatibility semantics
+### P0-5 — Lineage and compatibility semantics — RESOLVED BY ADR 0003
 
-Preserving old IDs does not preserve old segmentation. A BPE merge extension can change the token sequence for existing text while keeping prior IDs stable. Document this distinction explicitly in APIs and migration guidance.
-
-Define when a change is a same-lineage extension and when it starts a new lineage. Changes to normalization, pre-tokenization, byte mapping, decoder behavior, or algorithm semantics should not be treated as ordinary vocabulary growth.
+Appending ranked pieces or a new special token in an unused slot can remain in the same lineage, but it creates a new runtime fingerprint. Changing ID layout, byte mapping, algorithm/rank semantics, normalization, pre-tokenization, decoder behavior, or the meaning of an existing token starts a new lineage. Preserving old IDs does not preserve segmentation. Consumers must reject model-checkpoint fingerprint mismatches by default; embedding resizing and retraining/adaptation remain application-owned.
 
 ### P0-6 — Initial training data
 
@@ -230,7 +226,7 @@ Golden vectors should be versioned as test data and reused by JVM and future non
 
 ## 8. Recommended implementation sequence
 
-1. **Decision bundle:** resolve ID layout, initial special-token policy, `NONE` normalization baseline, pre-tokenizer experiment scope, byte/text error behavior, and the exact snapshot runtime model.
+1. **Decision bundle — COMPLETE:** ADR 0003 resolves the initial ID layout, special-token policy, NONE normalization/pre-tokenization profile, byte/text behavior, ranked BPE model, snapshot schema, fingerprint, and lineage.
 2. **Core domain model:** implement immutable snapshot and fingerprint value types, typed failures, byte/text boundaries, and an in-memory runtime contract. Keep experimental classes internal.
 3. **BPE runtime:** implement deterministic encoding/decoding against hand-authored tiny snapshots and independently checked golden vectors.
 4. **CBOR adapter:** add `tokenizer-format-cbor`, specify the exact schema and canonical digest input, then implement safe bounded parsing and writing.
@@ -244,7 +240,7 @@ Do not block correctness implementation on expensive model-level BPB experiments
 
 ## 9. Final decision
 
-**G7 audit: COMPLETE. Implementation readiness: CONDITIONAL.**
+**G7 audit: COMPLETE. G8 architecture decisions: ACCEPTED FOR INTERNAL IMPLEMENTATION. Implementation readiness: CONDITIONAL.**
 
 The project can proceed with an internal, non-stable BPE runtime prototype after P0-1 through P0-5 are recorded as explicit decisions. A distributable reference vocabulary additionally requires P0-6. Android dependency and D8/R8 packaging validation pass; on-device API 33 runtime support remains unclaimed until emulator or physical-device conformance tests pass.
 

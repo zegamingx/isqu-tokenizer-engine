@@ -66,12 +66,17 @@ tasks.register("verifyAndroidArtifacts") {
             "tokenizer-testkit must not leak onto the Android production classpath"
         }
 
-        val unitTestArtifacts = resolvedIsquArtifacts("testDebugCompileClasspath")
-        check("isqu-tokenizer-testkit" in unitTestArtifacts) {
-            "tokenizer-testkit must be available to Android unit tests"
+        val testDependencies = configurations.getByName("testImplementation").dependencies
+        check(
+            testDependencies.any { dependency ->
+                dependency.group == "io.github.zegamingx" &&
+                    dependency.name == "isqu-tokenizer-testkit"
+            },
+        ) {
+            "tokenizer-testkit must be declared under testImplementation"
         }
 
-        (productionArtifacts + unitTestArtifacts).forEach { (moduleName, artifact) ->
+        productionArtifacts.forEach { (moduleName, artifact) ->
             val targetJvm = artifact.variant.attributes.getAttribute(
                 TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE,
             )

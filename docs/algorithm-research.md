@@ -19,15 +19,15 @@ The learned artifact is not just a vocabulary list. It may include ordered merge
 
 ### 2.1 Byte-level Byte Pair Encoding (BPE)
 
-BPE begins from a base alphabet and repeatedly merges adjacent symbol pairs according to a training objective, commonly pair frequency. The ordered merge rules are then applied at inference according to their learned rank.
+BPE begins from a base alphabet and repeatedly merges adjacent symbol pairs according to a training objective, commonly pair frequency. In ISQU's accepted initial profile, learned byte strings are stored as a ranked piece table: the concatenation of adjacent pieces is a candidate when it exists in the table, and the lowest-rank candidate is merged first.
 
 For byte-level BPE, the base alphabet is the 256 byte values. Text is encoded as UTF-8 bytes before merges are applied.
 
 **Strengths**
 
 - Every byte value is representable, including bytes unseen in the training corpus.
-- Ordered merge rules give a compact, explicit runtime model.
-- The ordered merge list naturally defines a sequence of vocabulary extensions.
+- A rank-ordered byte-piece table gives a compact, explicit runtime model.
+- Appending learned pieces creates a sequence of vocabulary extensions.
 - A deterministic training run can produce nested prefix vocabularies if preprocessing, tie-breaking, and all trainer behavior are fixed.
 - The runtime can be implemented without a neural network or external service.
 
@@ -68,7 +68,7 @@ Unigram begins with a large candidate set of pieces, estimates piece probabiliti
 **Limitations**
 
 - Training and candidate pruning are more complex than basic BPE.
-- The vocabulary is not a simple prefix of one ordered merge list.
+- The vocabulary is not a simple prefix of one ranked-piece list.
 - The snapshot must preserve scores, base/fallback policy, and tie-breaking behavior.
 - Sampling must be explicitly separated from deterministic encoding.
 - Reproducibility requires pinning random-number behavior, trainer version, and all relevant configuration.

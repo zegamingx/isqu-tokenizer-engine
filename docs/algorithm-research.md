@@ -1,6 +1,6 @@
 # Algorithm Research and Selection
 
-- **Status:** Research review; no tokenizer algorithm is frozen
+- **Status:** Initial byte-level BPE rank profile accepted for internal prototype; no universal algorithm default is frozen
 - **Last reviewed:** 2026-11-13
 - **Scope:** tokenizer-core and tokenizer-training
 
@@ -39,7 +39,7 @@ For byte-level BPE, the base alphabet is the 256 byte values. Text is encoded as
 - A tokenizer change can alter segmentation even when earlier token IDs are preserved.
 - Byte-level sequences can have token boundaries inside a UTF-8 code point; decoding must concatenate bytes before text validation.
 
-**Current assessment:** lead implementation candidate because it provides universal byte coverage and a transparent ordered merge artifact. It is not accepted as the final default until benchmarked against Unigram and multilingual-fairness alternatives.
+**Current assessment:** accepted initial internal profile as a ranked byte-piece vocabulary. The initial profile uses no normalizer or pre-tokenizer. It is not accepted as the final default for every corpus or consumer tier until benchmarked against Unigram and multilingual-fairness alternatives.
 
 ### 2.2 Character-based BPE and BPE with byte fallback
 
@@ -56,7 +56,7 @@ Both can provide coverage, but they produce different segmentation, ID layouts, 
 
 ### 2.3 Unigram language-model tokenization
 
-Unigram begins with a large candidate set of pieces, estimates piece probabilities, and prunes pieces while optimizing a unigram language-model objective. Runtime segmentation uses a best-path procedure such as Viterbi; sampling can be offered separately for subword regularization.
+Unigram begins with a large candidate set of pieces, estimates piece probabilities, and prunes pieces while optimizing a unigram language-model objective. Runtime segmentation uses a best-path procedure such as Viterbi; sampling can be offered separately for subword regularization. Its scores, pruning lineage, fallback policy, and deterministic tie-breaking require a separate snapshot schema; they are not represented by the version-1 BPE ranked-piece array.
 
 **Strengths**
 
@@ -75,7 +75,7 @@ Unigram begins with a large candidate set of pieces, estimates piece probabiliti
 
 Research comparing BPE and Unigram has found Unigram competitive or better in some settings, including morphological segmentation, but the evidence is not universal across languages, corpora, model sizes, and tasks.
 
-**Current assessment:** mandatory comparison candidate. It must receive a fair implementation or trusted reference baseline before BPE is frozen as the default.
+**Current assessment:** mandatory comparison candidate before a universal algorithm/default claim or a 1.0 default freeze. It is not a blocker for the first internal BPE vertical slice. A trusted pinned reference implementation may be used for the first controlled comparison; a native Unigram runtime would require its own profile/ADR.
 
 ### 2.4 WordPiece
 

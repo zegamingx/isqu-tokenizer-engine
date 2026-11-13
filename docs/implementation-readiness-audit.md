@@ -220,6 +220,6 @@ Do not block correctness implementation on expensive model-level BPB experiments
 
 **G7 audit: COMPLETE. G8 architecture decisions: ACCEPTED FOR INTERNAL IMPLEMENTATION. Implementation readiness: CONDITIONAL.**
 
-The project can proceed with an internal, non-stable BPE runtime prototype after P0-1 through P0-5 are recorded as explicit decisions. A distributable reference vocabulary additionally requires P0-6. Android dependency and D8/R8 packaging validation pass; on-device API 33 runtime support remains unclaimed until emulator or physical-device conformance tests pass.
+The project can proceed now with an internal, non-stable ranked byte-level BPE runtime prototype because P0-1 through P0-5 are accepted in ADR 0003. A distributable reference vocabulary additionally requires P0-6. Android dependency and D8/R8 packaging validation pass; on-device API 33 runtime support remains unclaimed until emulator or physical-device conformance tests pass.
 
 No production tokenizer implementation or stable public API exists yet. The version-1 snapshot design is accepted for internal implementation, but its codec is not implemented and no stable public format is released. No general-purpose corpus is approved for reference training, no Maven Central release has occurred, and Android API 33 device-runtime compatibility remains unclaimed.

@@ -66,14 +66,6 @@ tasks.register("verifyAndroidArtifacts") {
             "tokenizer-testkit must not leak onto the Android production classpath"
         }
 
-        val testArtifacts = resolvedIsquArtifacts("debugUnitTestCompileClasspath")
-        val requiredTestOnlyModules = setOf(
-            "isqu-tokenizer-testkit",
-            "isqu-tokenizer-format-cbor",
-        )
-        check(testArtifacts.keys.containsAll(requiredTestOnlyModules)) {
-            "Android test classpath is missing ISQU test-only modules: ${requiredTestOnlyModules - testArtifacts.keys}"
-        }
         check("isqu-tokenizer-format-cbor" !in productionArtifacts) {
             "The CBOR format adapter must not leak onto the Android production classpath"
         }

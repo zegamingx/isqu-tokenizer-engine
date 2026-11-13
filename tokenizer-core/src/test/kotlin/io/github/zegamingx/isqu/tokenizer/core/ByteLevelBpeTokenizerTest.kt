@@ -58,6 +58,15 @@ class ByteLevelBpeTokenizerTest {
     }
 
     @Test
+    fun byteStringDebugRepresentationFormatsEveryByteAsTwoHexDigits() {
+        val value = ByteString.of(
+            byteArrayOf(0x00, 0x0f, 0x10, 0xff.toByte()),
+        )
+
+        assertEquals("ByteString(000f10ff)", value.toString())
+    }
+
+    @Test
     fun rawByteRoundTripPreservesArbitraryNonUtf8Data() {
         val tokenizer = ByteLevelBpeTokenizer(TokenizerSnapshot())
         val input = byteArrayOf(0, 0xff.toByte(), 0xc3.toByte(), 0x28, 0x0a)

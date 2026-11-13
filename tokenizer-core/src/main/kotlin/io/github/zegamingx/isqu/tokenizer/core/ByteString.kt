@@ -48,7 +48,9 @@ class ByteString private constructor(private val content: ByteArray) {
         val previewLength = minOf(content.size, 16)
         val preview = buildString(previewLength * 2) {
             for (index in 0 until previewLength) {
-                append(HEX[content[index].toInt() and 0xff])
+                val byteValue = content[index].toInt() and 0xff
+                append(HEX[byteValue ushr 4])
+                append(HEX[byteValue and 0x0f])
             }
         }
         return if (content.size <= previewLength) {

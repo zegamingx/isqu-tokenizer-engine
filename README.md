@@ -2,7 +2,7 @@
 
 A standalone Kotlin/JVM tokenizer library designed for local, deterministic, and reproducible text tokenization.
 
-> **Project status: Early development.** This repository currently contains project structure and design contracts only. There is no stable public API, production implementation, or published Maven artifact yet.
+> **Project status: Early development.** This repository currently contains project structure and design contracts only. There is no stable public API, production tokenizer implementation, or published Maven artifact yet.
 
 ## Goals
 
@@ -35,19 +35,43 @@ Algorithms and public interfaces are not frozen. BPE, Unigram, byte fallback, no
 
 ## Build environment
 
-The current Kotlin and Gradle versions are provisional. The build compatibility matrix, JVM target metadata, Gradle Wrapper, and consumer integration tests remain pending the dedicated build-and-compatibility validation stage.
+- JDK 17 or newer to run Gradle 9.9.1.
+- Gradle Wrapper 9.9.1, with distribution SHA-256 pinned.
+- Kotlin Gradle Plugin 2.4.21.
+- CI runs on JDK 25.
+- Published JVM bytecode and Java API baseline: Java 8.
+- Gradle Module Metadata target: `org.gradle.jvm.version = 8`.
 
-- JDK toolchain currently configured in the modules: 17.
-- Kotlin Gradle Plugin: 2.4.21.
-- Gradle version currently documented for the project: 9.7.0.
+The Kotlin plugin's fully-tested Gradle range currently ends at 9.7.0. Gradle 9.9.1 is used for its security fixes and is validated by repository CI; this pair must not be described as vendor-fully-supported. See [Build and Ecosystem Compatibility](docs/build-and-compatibility.md).
 
-The wrapper has not yet been generated. Do not treat the current build configuration as a validated release baseline.
+Build and test:
+
+```bash
+./gradlew clean build
+```
+
+Publish snapshot artifacts to Maven Local:
+
+```bash
+./gradlew publishToMavenLocal
+```
+
+Run the separate consumer compatibility fixture after publishing:
+
+```bash
+./gradlew -p compatibility/consumer clean verifyPublishedArtifacts build
+```
 
 ## Dependency coordinates
 
 No artifacts have been published. Maven coordinates and the first release version will be announced after the API, serialization format, compatibility tests, and publication metadata are ready.
 
 The intended group ID is `io.github.zegamingx`; it remains provisional until namespace verification with the publishing service.
+
+The local snapshot artifact IDs are:
+- `io.github.zegamingx:isqu-tokenizer-core:0.1.0-SNAPSHOT`
+- `io.github.zegamingx:isqu-tokenizer-training:0.1.0-SNAPSHOT`
+- `io.github.zegamingx:isqu-tokenizer-testkit:0.1.0-SNAPSHOT`
 
 ## Documentation
 
@@ -57,6 +81,7 @@ The intended group ID is `io.github.zegamingx`; it remains provisional until nam
 - [Tokenization contract](docs/tokenization-contract.md)
 - [Tokenizer format and persistence](docs/tokenizer-format.md)
 - [Compatibility policy](docs/compatibility-policy.md)
+- [Build and ecosystem compatibility](docs/build-and-compatibility.md)
 - [Architecture Decision Records](docs/adr/README.md)
 
 ### Research

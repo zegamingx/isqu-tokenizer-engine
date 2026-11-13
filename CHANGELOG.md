@@ -14,4 +14,6 @@ The project has not published a release yet.
 - Added a proposed language-independent tokenizer snapshot format.
 - Added algorithm comparison research for BPE, Unigram, and WordPiece.
 - Added corpus provenance, rights-review, and data-governance policy.
+- Added pinned Gradle Wrapper configuration, JVM 8 publication targeting, and Maven-local publications.
+- Added consumer compatibility validation for a Java 11 / Kotlin 2.4 consumer.
 - No production tokenizer implementation, stable public API, or accepted snapshot format is included yet.

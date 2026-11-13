@@ -1,7 +1,6 @@
 # Gradle
 .gradle/
 **/build/
-!gradle/wrapper/gradle-wrapper.jar
 
 # Kotlin
 .kotlin/
@@ -30,3 +29,6 @@ replay_pid*
 *.zip
 *.tar.gz
 *.rar
+
+# The verified Gradle Wrapper JAR is a required source-controlled build input.
+!gradle/wrapper/gradle-wrapper.jar

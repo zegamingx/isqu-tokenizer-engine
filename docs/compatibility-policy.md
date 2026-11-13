@@ -4,6 +4,8 @@
 
 The project is in early development. Public APIs, tokenizer algorithms, and persisted formats are not stable. No production compatibility guarantee is made before the first stable release.
 
+The current build and consumer validation baseline is documented in [Build and Ecosystem Compatibility](build-and-compatibility.md).
+
 ## API versioning
 
 The project intends to follow Semantic Versioning after the 1.0.0 release:
@@ -13,6 +15,16 @@ The project intends to follow Semantic Versioning after the 1.0.0 release:
 - PATCH: backward-compatible fixes.
 
 Before 1.0.0, breaking changes may occur and will be documented in the changelog.
+
+## Build and JVM compatibility
+
+The current build baseline uses Gradle Wrapper 9.9.1, Kotlin Gradle Plugin 2.4.21, and JDK 25 in CI. The build runs on JDK 17 or newer.
+
+Published Kotlin and Java classes target Java 8 bytecode and Java 8 APIs. Java `sourceCompatibility`, `targetCompatibility`, Java `options.release`, and Kotlin `jvmTarget`/JDK API release constraints must remain aligned. The generated Gradle Module Metadata must advertise `org.gradle.jvm.version = 8`.
+
+The current consumer smoke test uses Kotlin Gradle Plugin 2.4.10 and Java 11 target, matching the Kotlin and Java target levels observed in ArgusA. It uses a security-patched Gradle release. See the build compatibility document for the exact test matrix and the distinction between tested and vendor-fully-supported combinations.
+
+Changing the project build JDK must not silently raise the published JVM target or the minimum Java API level.
 
 ## Tokenizer format versioning
 

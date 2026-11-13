@@ -66,6 +66,18 @@ tasks.register("verifyAndroidArtifacts") {
             "tokenizer-testkit must not leak onto the Android production classpath"
         }
 
+        val testArtifacts = resolvedIsquArtifacts("debugUnitTestCompileClasspath")
+        val requiredTestOnlyModules = setOf(
+            "isqu-tokenizer-testkit",
+            "isqu-tokenizer-format-cbor",
+        )
+        check(testArtifacts.keys.containsAll(requiredTestOnlyModules)) {
+            "Android test classpath is missing ISQU test-only modules: ${requiredTestOnlyModules - testArtifacts.keys}"
+        }
+        check("isqu-tokenizer-format-cbor" !in productionArtifacts) {
+            "The CBOR format adapter must not leak onto the Android production classpath"
+        }
+
         val testDependencies = configurations.getByName("testImplementation").dependencies
         check(
             testDependencies.any { dependency ->
@@ -76,7 +88,7 @@ tasks.register("verifyAndroidArtifacts") {
             "tokenizer-testkit must be declared under testImplementation"
         }
 
-        productionArtifacts.forEach { (moduleName, artifact) ->
+        (productionArtifacts + testArtifacts).forEach { (moduleName, artifact) ->
             val targetJvm = artifact.variant.attributes.getAttribute(
                 TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE,
             )

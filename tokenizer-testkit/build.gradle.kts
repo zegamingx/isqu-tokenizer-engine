@@ -27,14 +27,10 @@ java {
     withSourcesJar()
 }
 
-// Production Kotlin code is limited to the Java 11 API surface used by Android API 33.
-// -Xjdk-release also pins the production class-file version to Java 11.
 tasks.named<KotlinJvmCompile>("compileKotlin") {
     compilerOptions.freeCompilerArgs.add("-Xjdk-release=11")
 }
 
-// Tests run on JDK 25 and may use the modern JUnit 6 toolchain independently of
-// the production artifact's Java 11 compatibility floor.
 tasks.named<KotlinJvmCompile>("compileTestKotlin") {
     compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
 }
@@ -49,8 +45,6 @@ tasks.named<JavaCompile>("compileTestJava") {
     options.release.set(25)
 }
 
-// JUnit 6 requires Java 17+ at runtime. Resolve test dependencies against the
-// JDK 25 test target instead of inheriting the Java 11 production target.
 listOf("testCompileClasspath", "testRuntimeClasspath").forEach { configurationName ->
     configurations.named(configurationName) {
         attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
@@ -59,6 +53,7 @@ listOf("testCompileClasspath", "testRuntimeClasspath").forEach { configurationNa
 
 dependencies {
     api(project(":tokenizer-core"))
+    api(project(":tokenizer-format-cbor"))
 
     testImplementation(kotlin("test-junit5"))
     testImplementation(libs.junit.jupiter)

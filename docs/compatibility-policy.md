@@ -35,7 +35,7 @@ Tests use JDK 25, JVM 25 test bytecode, JUnit Jupiter 6.1.3, and JUnit Platform 
 
 ## Android compatibility
 
-The Android packaging consumer uses AGP 9.4.0, compileSdk 36, minSdk 33, targetSdk 36, and Java 11 source/target compatibility. CI runs D8/R8 debug and minified-release packaging.
+The Android packaging consumer uses AGP 9.4.0, compileSdk 36, minSdk 33, targetSdk 36, and Java 11 source/target compatibility. CI runs D8/R8 debug and minified-release packaging; both passed in the latest compatibility run.
 
 This is not yet a device-runtime guarantee. The project must execute its tokenizer conformance suite on an Android API 33 emulator or device before making an on-device runtime support claim.
 

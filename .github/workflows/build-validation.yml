@@ -56,8 +56,28 @@ jobs:
       - name: Build, test, and publish to Maven Local
         run: ./gradlew --no-daemon --stacktrace clean build publishToMavenLocal
 
-      - name: Verify Java 11 / Kotlin 2.4 consumer
-        run: ./gradlew --no-daemon --stacktrace -p compatibility/consumer clean verifyPublishedArtifacts build
+      - name: Install Android SDK platform 37
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -x "$SDKMANAGER" ]]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+          fi
+          if [[ ! -x "$SDKMANAGER" ]]; then
+            echo "::error::Android SDK command-line tools were not found under $SDK_ROOT"
+            exit 1
+          fi
+          set +o pipefail
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null
+          set -o pipefail
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "platforms;android-37" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+
+      - name: Verify Android API 33 consumer with AGP 9.4.0
+        run: ./gradlew --no-daemon --stacktrace -p compatibility/android-consumer clean verifyAndroidArtifacts assembleDebug assembleRelease
 
       - name: Upload generated Gradle Wrapper
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

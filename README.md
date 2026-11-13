@@ -92,6 +92,7 @@ The local snapshot artifact IDs are:
 - [Build and ecosystem compatibility](docs/build-and-compatibility.md)
 - [Architecture Decision Records](docs/adr/README.md)
 - [Modern build and Android API 33 baseline (ADR 0002)](docs/adr/0002-modern-build-and-android-baseline.md)
+- [Initial byte-level BPE runtime profile (ADR 0003)](docs/adr/0003-initial-runtime-profile.md)
 - [Implementation Readiness Audit (G7)](docs/implementation-readiness-audit.md)
 
 ### Research

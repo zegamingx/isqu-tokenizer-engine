@@ -19,6 +19,6 @@ The project has not published a release yet.
 - Added a Java 21 / Kotlin 2.4.21 consumer compatibility fixture.
 - Added an Android API 33 consumer fixture using AGP 9.4.0 with D8/R8 debug and release packaging.
 - Added separate JVM 25 test compilation/runtime for JUnit 6 and corrected consumer testkit dependency scopes.
-- Corrected the Android debug unit-test classpath validation and kept the API 33 smoke app Java-only.
+- Corrected the Android consumer test-scope assertion to inspect the declarative testImplementation bucket without resolving AGP's self-referencing unit-test variant; kept the API 33 smoke app Java-only.
 - Moved tokenizer-testkit to test-only consumer scope and removed its unnecessary production dependency on tokenizer-training.
 - No production tokenizer implementation, stable public API, or accepted snapshot format is included yet.

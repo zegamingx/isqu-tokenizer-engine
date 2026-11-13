@@ -21,7 +21,7 @@ A standalone Kotlin/JVM tokenizer library designed for local, deterministic, and
 | `tokenizer-training` | Corpus processing and controlled vocabulary/model training workflows. |
 | `tokenizer-testkit` | Shared test fixtures, compatibility vectors, and contract-test utilities. |
 
-Algorithms and public interfaces are not frozen. BPE, Unigram, byte fallback, normalization, and pre-tokenization remain research candidates until their behavior and compatibility requirements are accepted.
+The initial internal runtime profile is ranked byte-level BPE with a NONE normalizer and no pre-tokenizer (ADR 0003). This is not a universal algorithm decision: Unigram remains a required comparator, while byte fallback, alternate normalization, and pre-tokenization profiles remain research candidates. Public Kotlin APIs and released format compatibility are not frozen before implementation and conformance testing.
 
 ## Design invariants
 

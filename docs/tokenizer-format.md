@@ -189,14 +189,14 @@ A loader validates before exposing the snapshot:
 - Format identifier and supported format version.
 - Closed-schema top-level/runtime/provenance keys.
 - CBOR structure, duplicate keys, deterministic encoding, UTF-8 text validity, and definite lengths.
-- Maximum file size, nesting depth, map/array lengths, metadata size, mergeable-piece count, and piece byte length against configured resource limits before allocation.
+- Explicit caller-supplied limits for total artifact bytes, mergeable-piece count, individual piece bytes, cumulative learned-piece bytes, special-token render bytes, text-string bytes, and provenance bytes before allocation. Version 1 has a maximum container nesting depth of four levels; top-level/runtime/schema map lengths and special-token count are exact/bounded by the closed schema. The loader has no unbounded default.
 - Correct ID ranges, unique special IDs/names, valid render bytes, and assigned-slot ordering.
 - Unique learned pieces, valid piece lengths, rank order, and at least one valid lower-rank split for every learned piece.
 - Exact normalizer/pre-tokenizer/decoder profile support.
 - Runtime fingerprint equality.
 - Unsupported algorithms, fields, IDs, or resource sizes produce typed errors.
 
-Parsing never performs network access or executes code. Raw source corpora and credentials are never embedded. The pre-1.0 loader requires an explicit resource-limit object and rejects input before allocation when any configured bound is exceeded.
+Parsing never performs network access or executes code. Raw source corpora and credentials are never embedded. The pre-1.0 loader requires an explicit `TokenizerLoadLimits` object; no unbounded/default-unlimited overload is permitted. It must reject an input before allocation when any configured bound is exceeded. A future platform preset must be named and justified by measured memory/latency tests on its target devices.
 
 ## 11. Interoperability
 

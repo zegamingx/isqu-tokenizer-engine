@@ -28,18 +28,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: "25"
 
       - name: Set up Gradle 9.9.1
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           gradle-version: "9.9.1"
 
@@ -47,7 +45,7 @@ jobs:
         run: gradle wrapper
 
       - name: Validate Gradle Wrapper JAR
-        uses: gradle/actions/wrapper-validation@v6
+        uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Record build environment
         run: |
@@ -62,7 +60,7 @@ jobs:
         run: ./gradlew --no-daemon --stacktrace -p compatibility/consumer clean verifyPublishedArtifacts build
 
       - name: Upload generated Gradle Wrapper
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: verified-gradle-wrapper
           path: |
@@ -82,7 +80,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout latest main
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: main
           fetch-depth: 0
@@ -96,7 +94,7 @@ jobs:
           fi
 
       - name: Download verified Gradle Wrapper
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: verified-gradle-wrapper
           path: .

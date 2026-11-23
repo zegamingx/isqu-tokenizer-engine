@@ -2,7 +2,7 @@
 
 A standalone Kotlin/JVM tokenizer library designed for local, deterministic, and reproducible text tokenization.
 
-> **Project status: Early development.** This repository currently contains project structure and design contracts only. There is no stable public API, production tokenizer implementation, or published Maven artifact yet.
+> **Project status: Early development.** This repository contains design contracts and an unreleased, pre-1.0 implementation of the initial byte-level BPE runtime, the version-1 snapshot codec, and test fixtures. There is no stable public API, production-ready tokenizer, or published Maven artifact yet.
 
 ## Goals
 
@@ -13,12 +13,13 @@ A standalone Kotlin/JVM tokenizer library designed for local, deterministic, and
 - Support Android and general Kotlin/JVM applications without depending on Android APIs.
 - Keep core operation local and offline.
 
-## Planned modules
+## Modules
 
 | Module | Responsibility |
 | --- | --- |
 | `tokenizer-core` | Runtime encoding/decoding, vocabulary snapshots, special tokens, normalization contracts, and tokenizer identity. |
-| `tokenizer-training` | Corpus processing and controlled vocabulary/model training workflows. |
+| `tokenizer-format-cbor` | Version-1 `.isqutok` snapshot codec: RFC 8949 deterministic CBOR, SHA-256 runtime fingerprint, optional provenance, and bounded loading. |
+| `tokenizer-training` | Corpus processing and controlled vocabulary/model training workflows (not implemented yet). |
 | `tokenizer-testkit` | Shared test fixtures, compatibility vectors, and contract-test utilities. |
 
 The initial internal runtime profile is ranked byte-level BPE with a NONE normalizer and no pre-tokenizer (ADR 0003). This is not a universal algorithm decision: Unigram remains a required comparator, while byte fallback, alternate normalization, and pre-tokenization profiles remain research candidates. Public Kotlin APIs and released format compatibility are not frozen before implementation and conformance testing.
@@ -78,6 +79,7 @@ The intended group ID is `io.github.zegamingx`; it remains provisional until nam
 
 The local snapshot artifact IDs are:
 - `io.github.zegamingx:isqu-tokenizer-core:0.1.0-SNAPSHOT`
+- `io.github.zegamingx:isqu-tokenizer-format-cbor:0.1.0-SNAPSHOT`
 - `io.github.zegamingx:isqu-tokenizer-training:0.1.0-SNAPSHOT`
 - `io.github.zegamingx:isqu-tokenizer-testkit:0.1.0-SNAPSHOT`
 

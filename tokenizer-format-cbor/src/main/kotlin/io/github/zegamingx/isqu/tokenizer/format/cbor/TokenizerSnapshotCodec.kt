@@ -220,8 +220,10 @@ object TokenizerSnapshotCodec {
     }
 
     /**
-     * Reads no more than maxArtifactBytes from the caller-owned stream.
-     * The stream is not closed by this method.
+     * Reads at most maxArtifactBytes + 1 bytes from the caller-owned stream: the artifact
+     * itself plus one sentinel byte whose presence proves the stream is longer than the
+     * limit. It never drains a whole read buffer past the limit. The stream is not closed
+     * by this method.
      */
     fun load(
         input: InputStream,
@@ -231,7 +233,11 @@ object TokenizerSnapshotCodec {
         val buffer = ByteArray(8_192)
         var total = 0
         while (true) {
-            val read = input.read(buffer)
+            val request = minOf(
+                buffer.size.toLong(),
+                limits.maxArtifactBytes.toLong() - total + 1L,
+            ).toInt()
+            val read = input.read(buffer, 0, request)
             if (read < 0) {
                 break
             }
